@@ -66,13 +66,10 @@ export const protocolStats = [
 ];
 
 export const headerStats = [
-  { label: "New Devices", value: 0, color: "text-primary" },
-  { label: "Active Devices", value: 296, color: "text-primary" },
-  { label: "Device Groups", value: 24, color: "text-primary" },
-  { label: "Files", value: 1, color: "text-primary" },
-  { label: "Users", value: 79, color: "text-primary" },
-  { label: "Networks", value: 1, color: "text-primary" },
-  { label: "Applications", value: 17, color: "text-primary" },
+  { label: "New Assets", value: 3, color: "text-emerald-500" },
+  { label: "Active Assets", value: 9, color: "text-primary" },
+  { label: "Asset Groups", value: 24, color: "text-primary" },
+  { label: "Stale Assets", value: 20, color: "text-amber-500" },
 ];
 
 export const roleToAssetMapping: Record<string, string[]> = {
