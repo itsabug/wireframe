@@ -55,6 +55,7 @@ export const NetworkAnalyticsTab = ({ flows, peers, conversations }: NetworkAnal
       return acc;
     }, new Map<string, { ip: string; bytes: number; direction: 'inbound' | 'outbound' }>())
   )
+    .map(([, value]) => value)
     .sort((a, b) => b.bytes - a.bytes)
     .slice(0, 5);
 
