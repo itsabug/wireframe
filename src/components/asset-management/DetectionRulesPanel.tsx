@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Asset, AssetGroup } from '@/types/asset-management';
+import { Asset, AssetGroup, NetworkSegment } from '@/types/asset-management';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -20,7 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AlertTriangle, ChevronRight, Save } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Save, Server, FolderTree, Globe, Layers } from 'lucide-react';
+import { mockNetworkSegments } from '@/data/mock-asset-data';
 
 type Severity = 'critical' | 'high' | 'medium' | 'low';
 type ThresholdScope = 'source' | 'target' | 'both';
@@ -40,6 +42,7 @@ interface RuleOverride {
   tolerance: number;
   assetId?: string;
   groupId?: string;
+  zoneId?: string;
 }
 
 interface DetectionRule {
@@ -50,6 +53,7 @@ interface DetectionRule {
   defaultThresholds: RuleThresholds;
   assetOverrides: RuleOverride[];
   groupOverrides: RuleOverride[];
+  zoneOverrides: RuleOverride[];
 }
 
 interface OverrideValues {
@@ -65,6 +69,7 @@ interface OverrideRow {
   source: OverrideValues;
   target: OverrideValues;
   area?: 'inside' | 'outside';
+  extra?: string;
 }
 
 const severityClasses: Record<Severity, string> = {
@@ -91,6 +96,8 @@ interface DetectionRulesPanelProps {
 }
 
 export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps) {
+  const zones: NetworkSegment[] = mockNetworkSegments;
+
   const rules = useMemo<DetectionRule[]>(() => {
     const assetOverrides = assets.slice(0, 3).map((asset, index) => ({
       id: `ov-asset-${asset.id}`,
@@ -105,6 +112,13 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
       scope: (index === 0 ? 'both' : 'source') as ThresholdScope,
       thresholdPerHour: 700 + index * 200,
       tolerance: 40 + index * 10,
+    }));
+    const zoneOverrides = zones.slice(0, 2).map((zone, index) => ({
+      id: `ov-zone-${zone.id}`,
+      zoneId: zone.id,
+      scope: (index === 0 ? 'source' : 'both') as ThresholdScope,
+      thresholdPerHour: 600 + index * 100,
+      tolerance: 35 + index * 5,
     }));
 
     return [
@@ -121,6 +135,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
         },
         assetOverrides,
         groupOverrides,
+        zoneOverrides,
       },
       {
         id: 'rule-dns-tunneling',
@@ -135,6 +150,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
         },
         assetOverrides: assetOverrides.slice(0, 2),
         groupOverrides: groupOverrides.slice(0, 1),
+        zoneOverrides: zoneOverrides.slice(0, 1),
       },
       {
         id: 'rule-port-scan',
@@ -149,6 +165,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
         },
         assetOverrides: [],
         groupOverrides: [],
+        zoneOverrides: [],
       },
       {
         id: 'rule-lateral-movement',
@@ -163,13 +180,15 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
         },
         assetOverrides: assetOverrides.slice(1, 3),
         groupOverrides: groupOverrides,
+        zoneOverrides: zoneOverrides,
       },
     ];
-  }, [assets, groups]);
+  }, [assets, groups, zones]);
 
   const [selectedRuleId, setSelectedRuleId] = useState(rules[0]?.id ?? '');
   const [ruleSearchQuery, setRuleSearchQuery] = useState('');
   const [ruleSortBy, setRuleSortBy] = useState('severity');
+  const [activeOverrideTab, setActiveOverrideTab] = useState('assets');
 
   const filteredRules = useMemo(() => {
     let result = rules.filter(r =>
@@ -183,7 +202,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
     } else if (ruleSortBy === 'name') {
       result.sort((a, b) => a.name.localeCompare(b.name));
     } else if (ruleSortBy === 'overrides') {
-      result.sort((a, b) => (b.assetOverrides.length + b.groupOverrides.length) - (a.assetOverrides.length + a.groupOverrides.length));
+      result.sort((a, b) => (b.assetOverrides.length + b.groupOverrides.length + b.zoneOverrides.length) - (a.assetOverrides.length + a.groupOverrides.length + a.zoneOverrides.length));
     }
 
     return result;
@@ -195,10 +214,13 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
   const [severity, setSeverity] = useState<Severity>(selectedRule.severity);
   const [assetOverrides, setAssetOverrides] = useState<OverrideRow[]>([]);
   const [groupOverrides, setGroupOverrides] = useState<OverrideRow[]>([]);
+  const [zoneOverrides, setZoneOverrides] = useState<OverrideRow[]>([]);
   const [assetFilter, setAssetFilter] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
+  const [zoneFilter, setZoneFilter] = useState('');
   const [assetScopeFilter, setAssetScopeFilter] = useState<OverrideFilter>('all');
   const [groupScopeFilter, setGroupScopeFilter] = useState<OverrideFilter>('all');
+  const [zoneScopeFilter, setZoneScopeFilter] = useState<OverrideFilter>('all');
   const [groupAreaFilter, setGroupAreaFilter] = useState<GroupAreaFilter>('all');
 
   const handleSaveOverrides = () => {
@@ -206,6 +228,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
       ruleId: selectedRule.id,
       assetOverrides,
       groupOverrides,
+      zoneOverrides,
     });
   };
 
@@ -213,7 +236,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
     if (!selectedRule) return;
     const defaultThresholds = selectedRule.defaultThresholds;
     const buildRows = (
-      entities: Array<{ id: string; label: string; searchText: string; area?: 'inside' | 'outside' }>,
+      entities: Array<{ id: string; label: string; searchText: string; area?: 'inside' | 'outside'; extra?: string }>,
       overrides: RuleOverride[],
     ) => {
       const baseRows = new Map<string, OverrideRow>();
@@ -224,6 +247,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
           label: entity.label,
           searchText: entity.searchText,
           area: entity.area,
+          extra: entity.extra,
           source: {
             enabled: true,
             thresholdPerHour: defaultThresholds.minPerHour,
@@ -254,7 +278,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
       };
 
       overrides.forEach((override) => {
-        const id = override.assetId ?? override.groupId;
+        const id = override.assetId ?? override.groupId ?? override.zoneId;
         if (!id) return;
         const row = baseRows.get(id);
         if (!row) return;
@@ -281,17 +305,29 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
       })),
       selectedRule.groupOverrides,
     );
+    const zoneRows = buildRows(
+      zones.map((zone) => ({
+        id: zone.id,
+        label: zone.name,
+        searchText: `${zone.name} ${zone.cidr}`,
+        extra: zone.cidr,
+      })),
+      selectedRule.zoneOverrides,
+    );
 
     setThresholds(defaultThresholds);
     setSeverity(selectedRule.severity);
     setAssetOverrides(assetRows);
     setGroupOverrides(groupRows);
+    setZoneOverrides(zoneRows);
     setAssetFilter('');
     setGroupFilter('');
+    setZoneFilter('');
     setAssetScopeFilter('all');
     setGroupScopeFilter('all');
+    setZoneScopeFilter('all');
     setGroupAreaFilter('all');
-  }, [selectedRuleId, selectedRule]);
+  }, [selectedRuleId, selectedRule, assets, groups, zones]);
 
   const formatAssetLabel = (asset: Asset) => {
     const ip = asset.identity.ipv4Addresses[0] ? ` • ${asset.identity.ipv4Addresses[0]}` : '';
@@ -323,6 +359,16 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
     const matchesSearch = row.searchText.toLowerCase().includes(groupFilter.toLowerCase());
     return matchesSearch && matchesScopeFilter(row, groupScopeFilter) && matchesGroupAreaFilter(row, groupAreaFilter);
   });
+  const filteredZoneOverrides = zoneOverrides.filter((row) => {
+    const matchesSearch = row.searchText.toLowerCase().includes(zoneFilter.toLowerCase());
+    return matchesSearch && matchesScopeFilter(row, zoneScopeFilter);
+  });
+
+  const getOverrideCount = (type: 'assets' | 'groups' | 'zones') => {
+    if (type === 'assets') return selectedRule.assetOverrides.length;
+    if (type === 'groups') return selectedRule.groupOverrides.length;
+    return selectedRule.zoneOverrides.length;
+  };
 
   if (!selectedRule) {
     return (
@@ -332,9 +378,167 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
     );
   }
 
+  const renderOverrideTable = (
+    rows: OverrideRow[],
+    setRows: React.Dispatch<React.SetStateAction<OverrideRow[]>>,
+    showAreaColumn: boolean = false,
+    showExtraColumn: boolean = false,
+  ) => (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-secondary/50">
+            <TableHead className="min-w-[200px]">Name</TableHead>
+            {showExtraColumn && <TableHead>CIDR</TableHead>}
+            {showAreaColumn && <TableHead>Area</TableHead>}
+            <TableHead>Source Threshold/hr</TableHead>
+            <TableHead>Source Tolerance</TableHead>
+            <TableHead>Target Threshold/hr</TableHead>
+            <TableHead>Target Tolerance</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={showAreaColumn || showExtraColumn ? 7 : 5} className="text-center text-muted-foreground py-8">
+                No items match your filter.
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((override) => (
+              <TableRow key={override.id}>
+                <TableCell>
+                  <div className="font-medium text-foreground">{override.label}</div>
+                </TableCell>
+                {showExtraColumn && (
+                  <TableCell>
+                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{override.extra || '—'}</code>
+                  </TableCell>
+                )}
+                {showAreaColumn && (
+                  <TableCell>
+                    {override.area ? (
+                      <Badge
+                        variant="outline"
+                        className={
+                          override.area === 'outside'
+                            ? 'border-external/40 text-external'
+                            : 'border-internal/40 text-internal'
+                        }
+                      >
+                        {override.area === 'outside' ? 'Outside' : 'Inside'}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                )}
+                <TableCell>
+                  <Input
+                    value={override.source.thresholdPerHour}
+                    disabled={!override.source.enabled}
+                    onChange={(e) =>
+                      setRows((prev) =>
+                        prev.map((item) =>
+                          item.id === override.id
+                            ? { ...item, source: { ...item.source, thresholdPerHour: Number(e.target.value) || 0 } }
+                            : item
+                        )
+                      )
+                    }
+                    className="bg-input h-9 w-[120px] disabled:bg-muted"
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={override.source.tolerance}
+                      disabled={!override.source.enabled}
+                      onChange={(e) =>
+                        setRows((prev) =>
+                          prev.map((item) =>
+                            item.id === override.id
+                              ? { ...item, source: { ...item.source, tolerance: Number(e.target.value) || 0 } }
+                              : item
+                          )
+                        )
+                      }
+                      className="bg-input h-9 w-[90px] disabled:bg-muted"
+                    />
+                    <Switch
+                      checked={override.source.enabled}
+                      onCheckedChange={(checked) =>
+                        setRows((prev) =>
+                          prev.map((item) =>
+                            item.id === override.id
+                              ? { ...item, source: { ...item.source, enabled: checked } }
+                              : item
+                          )
+                        )
+                      }
+                      aria-label="Enable source thresholds"
+                    />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={override.target.thresholdPerHour}
+                    disabled={!override.target.enabled}
+                    onChange={(e) =>
+                      setRows((prev) =>
+                        prev.map((item) =>
+                          item.id === override.id
+                            ? { ...item, target: { ...item.target, thresholdPerHour: Number(e.target.value) || 0 } }
+                            : item
+                        )
+                      )
+                    }
+                    className="bg-input h-9 w-[120px] disabled:bg-muted"
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={override.target.tolerance}
+                      disabled={!override.target.enabled}
+                      onChange={(e) =>
+                        setRows((prev) =>
+                          prev.map((item) =>
+                            item.id === override.id
+                              ? { ...item, target: { ...item.target, tolerance: Number(e.target.value) || 0 } }
+                              : item
+                          )
+                        )
+                      }
+                      className="bg-input h-9 w-[90px] disabled:bg-muted"
+                    />
+                    <Switch
+                      checked={override.target.enabled}
+                      onCheckedChange={(checked) =>
+                        setRows((prev) =>
+                          prev.map((item) =>
+                            item.id === override.id
+                              ? { ...item, target: { ...item.target, enabled: checked } }
+                              : item
+                          )
+                        )
+                      }
+                      aria-label="Enable target thresholds"
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   return (
     <div className="flex min-h-0 h-full overflow-hidden border border-border rounded-lg">
-      <div className="w-80 border-r border-border bg-card flex flex-col">
+      {/* Left sidebar: Rule list */}
+      <div className="w-80 border-r border-border bg-card flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-border space-y-3">
           <div className="text-sm font-semibold text-foreground">Detection Rules</div>
           <div className="relative">
@@ -378,33 +582,33 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
               <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{rule.assetOverrides.length} asset overrides</span>
-                <span>•</span>
-                <span>{rule.groupOverrides.length} group overrides</span>
+                <span>{rule.assetOverrides.length + rule.groupOverrides.length + rule.zoneOverrides.length} overrides</span>
               </div>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto p-6 space-y-6">
+      {/* Right content: Rule details + tabbed overrides */}
+      <div className="flex-1 min-h-0 overflow-auto p-6 space-y-5">
+        {/* Rule Header */}
         <div className="border border-border rounded-lg p-5 bg-card space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-foreground">{selectedRule.name}</h3>
               <p className="text-sm text-muted-foreground mt-1">{selectedRule.description}</p>
             </div>
-            <Button size="sm">
+            <Button size="sm" onClick={handleSaveOverrides}>
               <Save className="w-4 h-4 mr-1" />
-              Save Changes
+              Save All
             </Button>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-2">
-              <Label>Severity</Label>
+              <Label className="text-xs">Severity</Label>
               <Select value={severity} onValueChange={(v) => setSeverity(v as Severity)}>
-                <SelectTrigger className="bg-input">
+                <SelectTrigger className="bg-input h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -416,449 +620,170 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Learning Period (days)</Label>
+              <Label className="text-xs">Learning Period (days)</Label>
               <Input
                 value={thresholds.learningDays}
                 onChange={(e) =>
                   setThresholds({ ...thresholds, learningDays: Number(e.target.value) || 0 })
                 }
-                className="bg-input"
+                className="bg-input h-9"
               />
             </div>
             <div className="space-y-2">
-              <Label>Tolerance (%)</Label>
+              <Label className="text-xs">Tolerance (%)</Label>
               <Input
                 value={thresholds.tolerance}
                 onChange={(e) =>
                   setThresholds({ ...thresholds, tolerance: Number(e.target.value) || 0 })
                 }
-                className="bg-input"
+                className="bg-input h-9"
               />
             </div>
             <div className="space-y-2">
-              <Label>Never trigger when less than (per hour)</Label>
+              <Label className="text-xs">Min Threshold/hr</Label>
               <Input
                 value={thresholds.minPerHour}
                 onChange={(e) =>
                   setThresholds({ ...thresholds, minPerHour: Number(e.target.value) || 0 })
                 }
-                className="bg-input"
+                className="bg-input h-9"
               />
             </div>
           </div>
         </div>
 
-        <div className="flex items-start gap-3 p-4 bg-info/10 rounded-lg border border-info/20">
-          <AlertTriangle className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-medium text-foreground">Override precedence for this rule</p>
-            <p className="text-muted-foreground mt-1">
-              Rule defaults apply to all assets. Group overrides replace defaults, and asset overrides
-              replace group settings when both exist. Turning off Source/Target excludes that direction
-              for the asset or group (turn both off to exclude the rule entirely).
-            </p>
-          </div>
+        {/* Precedence Info */}
+        <div className="flex items-start gap-3 p-3 bg-info/10 rounded-lg border border-info/20">
+          <AlertTriangle className="w-4 h-4 text-info flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Override precedence:</span>{' '}
+            Rule defaults → Network Zone → Asset Group → Individual Asset (most specific wins).
+          </p>
         </div>
 
-        <div className="border border-border rounded-lg p-5 bg-card space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-semibold text-foreground">Asset Threshold Overrides</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                Override thresholds for specific assets or IPs that require different sensitivity.
-              </p>
+        {/* Tabbed Override Sections */}
+        <div className="border border-border rounded-lg bg-card overflow-hidden">
+          <Tabs value={activeOverrideTab} onValueChange={setActiveOverrideTab} className="w-full">
+            <div className="border-b border-border bg-secondary/30 px-4">
+              <TabsList className="h-12 bg-transparent p-0 gap-0">
+                <TabsTrigger
+                  value="assets"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-b-none border-b-2 border-transparent data-[state=active]:border-primary px-5 py-2.5 gap-2"
+                >
+                  <Server className="w-4 h-4" />
+                  <span>Individual Assets</span>
+                  <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
+                    {getOverrideCount('assets')}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="groups"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-b-none border-b-2 border-transparent data-[state=active]:border-primary px-5 py-2.5 gap-2"
+                >
+                  <FolderTree className="w-4 h-4" />
+                  <span>Asset Groups</span>
+                  <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
+                    {getOverrideCount('groups')}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="zones"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-b-none border-b-2 border-transparent data-[state=active]:border-primary px-5 py-2.5 gap-2"
+                >
+                  <Layers className="w-4 h-4" />
+                  <span>Network Zones</span>
+                  <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
+                    {getOverrideCount('zones')}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <Input
-              value={assetFilter}
-              onChange={(e) => setAssetFilter(e.target.value)}
-              placeholder="Filter assets by hostname or IP..."
-              className="bg-input max-w-sm"
-            />
-            <Select value={assetScopeFilter} onValueChange={(value) => setAssetScopeFilter(value as OverrideFilter)}>
-              <SelectTrigger className="bg-input h-9 w-[180px]">
-                <SelectValue placeholder="Filter by scope" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="source">Source only</SelectItem>
-                <SelectItem value="target">Target only</SelectItem>
-                <SelectItem value="both">Source + Target</SelectItem>
-                <SelectItem value="disabled">Disabled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <TabsContent value="assets" className="p-4 space-y-4 mt-0">
+              <div className="flex items-center justify-between gap-3">
+                <Input
+                  value={assetFilter}
+                  onChange={(e) => setAssetFilter(e.target.value)}
+                  placeholder="Filter by hostname or IP..."
+                  className="bg-input max-w-sm h-9"
+                />
+                <Select value={assetScopeFilter} onValueChange={(value) => setAssetScopeFilter(value as OverrideFilter)}>
+                  <SelectTrigger className="bg-input h-9 w-[160px]">
+                    <SelectValue placeholder="Filter by scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Scopes</SelectItem>
+                    <SelectItem value="source">Source only</SelectItem>
+                    <SelectItem value="target">Target only</SelectItem>
+                    <SelectItem value="both">Source + Target</SelectItem>
+                    <SelectItem value="disabled">Disabled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {renderOverrideTable(filteredAssetOverrides, setAssetOverrides, false, false)}
+            </TabsContent>
 
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/50">
-                  <TableHead>Asset/IP</TableHead>
-                  <TableHead>Source Threshold/hr</TableHead>
-                  <TableHead>Source Tolerance</TableHead>
-                  <TableHead>Target Threshold/hr</TableHead>
-                  <TableHead>Target Tolerance</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAssetOverrides.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No assets match your filter.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAssetOverrides.map((override) => (
-                    <TableRow key={override.id}>
-                      <TableCell>
-                        <div className="font-medium text-foreground">{override.label}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={override.source.thresholdPerHour}
-                          disabled={!override.source.enabled}
-                          onChange={(e) =>
-                            setAssetOverrides((prev) =>
-                              prev.map((item) =>
-                                item.id === override.id
-                                  ? {
-                                      ...item,
-                                      source: {
-                                        ...item.source,
-                                        thresholdPerHour: Number(e.target.value) || 0,
-                                      },
-                                    }
-                                  : item,
-                              ),
-                            )
-                          }
-                          className="bg-input h-9 w-[140px] disabled:bg-muted"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={override.source.tolerance}
-                            disabled={!override.source.enabled}
-                            onChange={(e) =>
-                              setAssetOverrides((prev) =>
-                                prev.map((item) =>
-                                  item.id === override.id
-                                    ? {
-                                        ...item,
-                                        source: {
-                                          ...item.source,
-                                          tolerance: Number(e.target.value) || 0,
-                                        },
-                                      }
-                                    : item,
-                                ),
-                              )
-                            }
-                            className="bg-input h-9 w-[110px] disabled:bg-muted"
-                          />
-                          <Switch
-                            checked={override.source.enabled}
-                            onCheckedChange={(checked) =>
-                              setAssetOverrides((prev) =>
-                                prev.map((item) =>
-                                  item.id === override.id
-                                    ? { ...item, source: { ...item.source, enabled: checked } }
-                                    : item,
-                                ),
-                              )
-                            }
-                            aria-label="Enable source thresholds"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={override.target.thresholdPerHour}
-                          disabled={!override.target.enabled}
-                          onChange={(e) =>
-                            setAssetOverrides((prev) =>
-                              prev.map((item) =>
-                                item.id === override.id
-                                  ? {
-                                      ...item,
-                                      target: {
-                                        ...item.target,
-                                        thresholdPerHour: Number(e.target.value) || 0,
-                                      },
-                                    }
-                                  : item,
-                              ),
-                            )
-                          }
-                          className="bg-input h-9 w-[140px] disabled:bg-muted"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={override.target.tolerance}
-                            disabled={!override.target.enabled}
-                            onChange={(e) =>
-                              setAssetOverrides((prev) =>
-                                prev.map((item) =>
-                                  item.id === override.id
-                                    ? {
-                                        ...item,
-                                        target: {
-                                          ...item.target,
-                                          tolerance: Number(e.target.value) || 0,
-                                        },
-                                      }
-                                    : item,
-                                ),
-                            )
-                          }
-                            className="bg-input h-9 w-[110px] disabled:bg-muted"
-                          />
-                          <Switch
-                            checked={override.target.enabled}
-                            onCheckedChange={(checked) =>
-                              setAssetOverrides((prev) =>
-                                prev.map((item) =>
-                                  item.id === override.id
-                                    ? { ...item, target: { ...item.target, enabled: checked } }
-                                    : item,
-                                ),
-                              )
-                            }
-                            aria-label="Enable target thresholds"
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+            <TabsContent value="groups" className="p-4 space-y-4 mt-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <Input
+                  value={groupFilter}
+                  onChange={(e) => setGroupFilter(e.target.value)}
+                  placeholder="Filter groups..."
+                  className="bg-input max-w-sm h-9"
+                />
+                <Select value={groupAreaFilter} onValueChange={(value) => setGroupAreaFilter(value as GroupAreaFilter)}>
+                  <SelectTrigger className="bg-input h-9 w-[150px]">
+                    <SelectValue placeholder="Filter by area" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Areas</SelectItem>
+                    <SelectItem value="inside">Inside Assets</SelectItem>
+                    <SelectItem value="outside">Outside Assets</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={groupScopeFilter} onValueChange={(value) => setGroupScopeFilter(value as OverrideFilter)}>
+                  <SelectTrigger className="bg-input h-9 w-[160px]">
+                    <SelectValue placeholder="Filter by scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Scopes</SelectItem>
+                    <SelectItem value="source">Source only</SelectItem>
+                    <SelectItem value="target">Target only</SelectItem>
+                    <SelectItem value="both">Source + Target</SelectItem>
+                    <SelectItem value="disabled">Disabled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {renderOverrideTable(filteredGroupOverrides, setGroupOverrides, true, false)}
+            </TabsContent>
+
+            <TabsContent value="zones" className="p-4 space-y-4 mt-0">
+              <div className="flex items-center justify-between gap-3">
+                <Input
+                  value={zoneFilter}
+                  onChange={(e) => setZoneFilter(e.target.value)}
+                  placeholder="Filter by zone name or CIDR..."
+                  className="bg-input max-w-sm h-9"
+                />
+                <Select value={zoneScopeFilter} onValueChange={(value) => setZoneScopeFilter(value as OverrideFilter)}>
+                  <SelectTrigger className="bg-input h-9 w-[160px]">
+                    <SelectValue placeholder="Filter by scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Scopes</SelectItem>
+                    <SelectItem value="source">Source only</SelectItem>
+                    <SelectItem value="target">Target only</SelectItem>
+                    <SelectItem value="both">Source + Target</SelectItem>
+                    <SelectItem value="disabled">Disabled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {renderOverrideTable(filteredZoneOverrides, setZoneOverrides, false, true)}
+            </TabsContent>
+          </Tabs>
         </div>
 
-        <div className="border border-border rounded-lg p-5 bg-card space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-semibold text-foreground">Group Threshold Overrides</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                Apply rule thresholds to entire asset groups for consistent tuning.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Input
-              value={groupFilter}
-              onChange={(e) => setGroupFilter(e.target.value)}
-              placeholder="Filter groups..."
-              className="bg-input max-w-sm"
-            />
-            <Select
-              value={groupAreaFilter}
-              onValueChange={(value) => setGroupAreaFilter(value as GroupAreaFilter)}
-            >
-              <SelectTrigger className="bg-input h-9 w-[170px]">
-                <SelectValue placeholder="Filter by area" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Areas</SelectItem>
-                <SelectItem value="inside">Inside Assets</SelectItem>
-                <SelectItem value="outside">Outside Assets</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={groupScopeFilter} onValueChange={(value) => setGroupScopeFilter(value as OverrideFilter)}>
-              <SelectTrigger className="bg-input h-9 w-[180px]">
-                <SelectValue placeholder="Filter by scope" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="source">Source only</SelectItem>
-                <SelectItem value="target">Target only</SelectItem>
-                <SelectItem value="both">Source + Target</SelectItem>
-                <SelectItem value="disabled">Disabled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/50">
-                  <TableHead>Group</TableHead>
-                  <TableHead>Area</TableHead>
-                  <TableHead>Source Threshold/hr</TableHead>
-                  <TableHead>Source Tolerance</TableHead>
-                  <TableHead>Target Threshold/hr</TableHead>
-                  <TableHead>Target Tolerance</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredGroupOverrides.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      No groups match your filter.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredGroupOverrides.map((override) => (
-                    <TableRow key={override.id}>
-                      <TableCell>
-                        <div className="font-medium text-foreground">{override.label}</div>
-                      </TableCell>
-                      <TableCell>
-                        {override.area ? (
-                          <Badge
-                            variant="outline"
-                            className={
-                              override.area === 'outside'
-                                ? 'border-external/40 text-external'
-                                : 'border-internal/40 text-internal'
-                            }
-                          >
-                            {override.area === 'outside' ? 'Outside' : 'Inside'}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={override.source.thresholdPerHour}
-                          disabled={!override.source.enabled}
-                          onChange={(e) =>
-                            setGroupOverrides((prev) =>
-                              prev.map((item) =>
-                                item.id === override.id
-                                  ? {
-                                      ...item,
-                                      source: {
-                                        ...item.source,
-                                        thresholdPerHour: Number(e.target.value) || 0,
-                                      },
-                                    }
-                                  : item,
-                              ),
-                            )
-                          }
-                          className="bg-input h-9 w-[140px] disabled:bg-muted"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={override.source.tolerance}
-                            disabled={!override.source.enabled}
-                            onChange={(e) =>
-                              setGroupOverrides((prev) =>
-                                prev.map((item) =>
-                                  item.id === override.id
-                                    ? {
-                                        ...item,
-                                        source: {
-                                          ...item.source,
-                                          tolerance: Number(e.target.value) || 0,
-                                        },
-                                      }
-                                    : item,
-                                ),
-                            )
-                          }
-                            className="bg-input h-9 w-[110px] disabled:bg-muted"
-                          />
-                          <Switch
-                            checked={override.source.enabled}
-                            onCheckedChange={(checked) =>
-                              setGroupOverrides((prev) =>
-                                prev.map((item) =>
-                                  item.id === override.id
-                                    ? { ...item, source: { ...item.source, enabled: checked } }
-                                    : item,
-                                ),
-                              )
-                            }
-                            aria-label="Enable source thresholds"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={override.target.thresholdPerHour}
-                          disabled={!override.target.enabled}
-                          onChange={(e) =>
-                            setGroupOverrides((prev) =>
-                              prev.map((item) =>
-                                item.id === override.id
-                                  ? {
-                                      ...item,
-                                      target: {
-                                        ...item.target,
-                                        thresholdPerHour: Number(e.target.value) || 0,
-                                      },
-                                    }
-                                  : item,
-                              ),
-                            )
-                          }
-                          className="bg-input h-9 w-[140px] disabled:bg-muted"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={override.target.tolerance}
-                            disabled={!override.target.enabled}
-                            onChange={(e) =>
-                              setGroupOverrides((prev) =>
-                                prev.map((item) =>
-                                  item.id === override.id
-                                    ? {
-                                        ...item,
-                                        target: {
-                                          ...item.target,
-                                          tolerance: Number(e.target.value) || 0,
-                                        },
-                                      }
-                                    : item,
-                                ),
-                            )
-                          }
-                            className="bg-input h-9 w-[110px] disabled:bg-muted"
-                          />
-                          <Switch
-                            checked={override.target.enabled}
-                            onCheckedChange={(checked) =>
-                              setGroupOverrides((prev) =>
-                                prev.map((item) =>
-                                  item.id === override.id
-                                    ? { ...item, target: { ...item.target, enabled: checked } }
-                                    : item,
-                                ),
-                              )
-                            }
-                            aria-label="Enable target thresholds"
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <Button onClick={handleSaveOverrides}>
-            <Save className="w-4 h-4 mr-2" />
-            Save Overrides
-          </Button>
-        </div>
-
+        {/* Global Suppression */}
         <div className="border border-border rounded-lg p-5 bg-card space-y-4">
           <div>
             <h4 className="text-sm font-semibold text-foreground">Global Suppression Rules</h4>
@@ -872,24 +797,15 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
                 <p className="text-sm font-medium">Vulnerability Scanner Exclusion</p>
                 <p className="text-xs text-muted-foreground">Suppress all alerts from 10.0.5.50 (Qualys Scanner)</p>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="outline">Active</Badge>
-                <Switch defaultChecked />
-              </div>
+              <Switch checked={true} aria-label="Toggle suppression" />
             </div>
             <div className="flex items-center justify-between p-3 border border-border/50 rounded-lg bg-secondary/20">
               <div>
-                <p className="text-sm font-medium">Backup Window Suppression</p>
-                <p className="text-xs text-muted-foreground">Suppress "Large Data Transfer" during 02:00 - 05:00 UTC</p>
+                <p className="text-sm font-medium">Backup Window Exclusion</p>
+                <p className="text-xs text-muted-foreground">Suppress alerts daily 02:00-04:00 for backup traffic</p>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="outline">Active</Badge>
-                <Switch defaultChecked />
-              </div>
+              <Switch checked={true} aria-label="Toggle suppression" />
             </div>
-            <Button variant="outline" size="sm" className="w-full border-dashed">
-              + Add Suppression Rule
-            </Button>
           </div>
         </div>
       </div>
