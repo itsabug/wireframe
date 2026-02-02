@@ -4,7 +4,6 @@ import {
   ChevronRight, 
   ChevronDown, 
   Folder, 
-  FolderOpen, 
   Server,
   Globe,
   Shield,
@@ -18,7 +17,9 @@ import {
   Check,
   X,
   Cpu,
-  Eye
+  Eye,
+  Building2,
+  Network
 } from 'lucide-react';
 import { AssetGroup } from '@/types/asset-management';
 import {
@@ -70,7 +71,7 @@ export function GroupTreeNavigation({
 }: GroupTreeNavigationProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['system', 'user', 'ai'])
+    new Set(['internal', 'external', 'ai'])
   );
 
   const toggleSection = (sectionId: string) => {
@@ -83,13 +84,63 @@ export function GroupTreeNavigation({
     setExpandedSections(newExpanded);
   };
 
-  // Filter and categorize groups
+  // Filter groups by search
   const filteredGroups = groups.filter(g =>
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const systemGroups = filteredGroups.filter(g => g.source === 'system');
-  const userGroups = filteredGroups.filter(g => g.source === 'user' && g.status === 'active');
+  // Get parent system groups
+  const internalHostsGroup = filteredGroups.find(g => g.id === 'grp-internal');
+  const externalHostsGroup = filteredGroups.find(g => g.id === 'grp-external');
+
+  // Categorize groups under Internal or External based on their properties
+  const getInternalGroups = () => {
+    return filteredGroups.filter(g => {
+      // Exclude the parent group itself and external group
+      if (g.id === 'grp-internal' || g.id === 'grp-external') return false;
+      // AI suggestions go to their own section
+      if (g.source === 'ai_suggested' && g.status === 'pending_review') return false;
+      
+      // Groups that belong under Internal
+      const internalIds = [
+        'grp-critical', 'grp-dmz', 'grp-cloud', 'grp-kubernetes', 
+        'grp-databases', 'grp-workstations', 'grp-finance', 'grp-hr',
+        'grp-unassigned', 'grp-stale'
+      ];
+      
+      // Check if explicitly internal or has internal parent
+      if (g.parentId === 'grp-internal') return true;
+      if (internalIds.includes(g.id)) return true;
+      
+      // Check rules for internal locality
+      if (g.rules?.some(r => r.field === 'locality' && r.value === 'internal')) return true;
+      if (g.rules?.some(r => r.field === 'locality' && r.value === 'cloud')) return true;
+      if (g.rules?.some(r => r.field === 'zone')) return true;
+      
+      // Default: internal if not explicitly external
+      return g.source === 'user' || g.source === 'system';
+    });
+  };
+
+  const getExternalGroups = () => {
+    return filteredGroups.filter(g => {
+      if (g.id === 'grp-internal' || g.id === 'grp-external') return false;
+      if (g.source === 'ai_suggested' && g.status === 'pending_review') return false;
+      
+      const externalIds = ['grp-internet-facing', 'grp-guest', 'grp-scanners', 'grp-third-party', 'grp-saas'];
+      if (externalIds.includes(g.id)) return true;
+      
+      // Check rules for external/guest locality
+      if (g.rules?.some(r => r.field === 'locality' && r.value === 'external')) return true;
+      if (g.rules?.some(r => r.field === 'locality' && r.value === 'guest')) return true;
+      if (g.rules?.some(r => r.field === 'exposure.hasPublicIP' && r.value === 'true')) return true;
+      
+      return false;
+    });
+  };
+
+  const internalGroups = getInternalGroups();
+  const externalGroups = getExternalGroups();
   const aiSuggestedGroups = filteredGroups.filter(g => g.source === 'ai_suggested' && g.status === 'pending_review');
 
   const totalAssets = groups.reduce((sum, g) => sum + g.assetCount, 0);
@@ -99,14 +150,24 @@ export function GroupTreeNavigation({
       return groupIconLibrary[group.icon];
     }
     
-    // Default icons based on source
-    if (group.source === 'system') {
-      return <Cpu className="w-4 h-4 text-muted-foreground" />;
-    }
     if (group.source === 'ai_suggested') {
       return <Sparkles className="w-4 h-4 text-amber-500" />;
     }
+    if (group.source === 'system') {
+      return <Cpu className="w-4 h-4 text-muted-foreground" />;
+    }
     return <Folder className="w-4 h-4 text-muted-foreground" />;
+  };
+
+  const getSourceBadge = (group: AssetGroup) => {
+    if (group.source === 'system') {
+      return (
+        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-muted/50 text-muted-foreground border-muted-foreground/30">
+          System
+        </Badge>
+      );
+    }
+    return null;
   };
 
   const renderGroupItem = (group: AssetGroup, isAiSuggested = false) => {
@@ -129,6 +190,7 @@ export function GroupTreeNavigation({
         >
           {getGroupIcon(group)}
           <span className="truncate flex-1">{group.name}</span>
+          {getSourceBadge(group)}
           <span className="text-xs text-muted-foreground flex-shrink-0 tabular-nums">
             {group.assetCount}
           </span>
@@ -206,48 +268,64 @@ export function GroupTreeNavigation({
     );
   };
 
-  const renderSection = (
+  const renderParentSection = (
     id: string,
     title: string,
     icon: React.ReactNode,
-    sectionGroups: AssetGroup[],
+    parentGroup: AssetGroup | undefined,
+    childGroups: AssetGroup[],
     options?: { isAiSection?: boolean; badge?: React.ReactNode }
   ) => {
     const isExpanded = expandedSections.has(id);
-    const sectionAssetCount = sectionGroups.reduce((sum, g) => sum + g.assetCount, 0);
-
-    if (sectionGroups.length === 0 && !options?.isAiSection) return null;
+    const sectionAssetCount = parentGroup?.assetCount ?? childGroups.reduce((sum, g) => sum + g.assetCount, 0);
+    const isParentSelected = parentGroup && selectedGroupId === parentGroup.id;
 
     return (
-      <div key={id} className="mb-3">
-        <button
-          onClick={() => toggleSection(id)}
+      <div key={id} className="mb-2">
+        {/* Parent header row */}
+        <div
           className={cn(
-            'flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors',
-            'text-muted-foreground/80 hover:bg-secondary hover:text-foreground'
+            'flex items-center gap-2 w-full px-2 py-2.5 text-sm font-medium rounded-md transition-colors cursor-pointer',
+            isParentSelected 
+              ? 'bg-primary/15 text-primary border border-primary/30' 
+              : 'text-foreground hover:bg-secondary'
           )}
         >
-          {isExpanded ? (
-            <ChevronDown className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronRight className="w-3.5 h-3.5" />
-          )}
-          {icon}
-          <span className="flex-1 text-left">{title}</span>
-          {options?.badge}
-          <span className="text-[10px] font-normal text-muted-foreground/60 tabular-nums">
-            {sectionGroups.length} / {sectionAssetCount}
-          </span>
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSection(id);
+            }}
+            className="p-0.5 rounded hover:bg-muted"
+          >
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
+          <div 
+            className="flex items-center gap-2 flex-1 min-w-0"
+            onClick={() => parentGroup && onSelectGroup(parentGroup.id)}
+          >
+            {icon}
+            <span className="flex-1 truncate">{title}</span>
+            {options?.badge}
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {sectionAssetCount}
+            </span>
+          </div>
+        </div>
 
+        {/* Children */}
         {isExpanded && (
-          <div className="mt-1 ml-2 space-y-1">
-            {sectionGroups.length === 0 ? (
+          <div className="mt-1 ml-4 pl-2 border-l border-border/50 space-y-1">
+            {childGroups.length === 0 ? (
               <p className="text-xs text-muted-foreground/60 px-3 py-2 italic">
-                No suggestions at this time
+                {options?.isAiSection ? 'No suggestions at this time' : 'No groups in this category'}
               </p>
             ) : (
-              sectionGroups.map(group => renderGroupItem(group, options?.isAiSection))
+              childGroups.map(group => renderGroupItem(group, options?.isAiSection))
             )}
           </div>
         )}
@@ -287,27 +365,32 @@ export function GroupTreeNavigation({
 
         <div className="h-px bg-border my-3" />
 
-        {/* System Groups */}
-        {renderSection(
-          'system',
-          'System Groups',
-          <Cpu className="w-3.5 h-3.5" />,
-          systemGroups
+        {/* Internal Hosts - Parent with nested children */}
+        {renderParentSection(
+          'internal',
+          'Internal Hosts',
+          <Building2 className="w-4 h-4 text-primary" />,
+          internalHostsGroup,
+          internalGroups
         )}
 
-        {/* User Groups */}
-        {renderSection(
-          'user',
-          'Custom Groups',
-          <Folder className="w-3.5 h-3.5" />,
-          userGroups
+        {/* External Hosts - Parent with nested children */}
+        {renderParentSection(
+          'external',
+          'External / Internet Hosts',
+          <Globe className="w-4 h-4 text-chart-2" />,
+          externalHostsGroup,
+          externalGroups
         )}
 
-        {/* AI-Suggested Groups */}
-        {renderSection(
+        <div className="h-px bg-border my-3" />
+
+        {/* AI-Suggested Groups - Separate review section */}
+        {renderParentSection(
           'ai',
           'AI Suggestions',
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" />,
+          <Sparkles className="w-4 h-4 text-amber-500" />,
+          undefined,
           aiSuggestedGroups,
           { 
             isAiSection: true,
