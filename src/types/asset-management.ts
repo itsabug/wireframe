@@ -137,6 +137,10 @@ export interface TagDefinition {
 
 export type GroupType = 'static' | 'dynamic';
 
+export type GroupSource = 'user' | 'ai_suggested' | 'system';
+
+export type GroupStatus = 'active' | 'pending_review' | 'rejected';
+
 export type BusinessCriticality =
   | 'not_important'
   | 'important'
@@ -167,11 +171,21 @@ export interface GroupOptions {
   trapUnusedAddresses: boolean;
 }
 
+export interface AiClusteringMetadata {
+  confidence: number; // 0-1 score
+  clusteringMethod: 'behavioral' | 'communication_pattern' | 'protocol_similarity' | 'temporal';
+  suggestedAt: string;
+  reasoning: string;
+  matchedAssetIds?: string[];
+}
+
 export interface AssetGroup {
   id: string;
   name: string;
   description?: string;
   type: GroupType;
+  source: GroupSource;
+  status: GroupStatus;
   parentId?: string;
   icon?: string;
   businessCriticality?: BusinessCriticality;
@@ -185,6 +199,7 @@ export interface AssetGroup {
   createdBy?: string;
   updatedBy?: string;
   isDefault?: boolean;
+  aiMetadata?: AiClusteringMetadata;
 }
 
 // =============================================
