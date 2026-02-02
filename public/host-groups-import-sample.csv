@@ -1,0 +1,5 @@
+name,description,business_criticality,type,parent_name,ip_ranges,rule_field,rule_operator,rule_value
+Critical Infrastructure,Mission-critical systems,business_critical,dynamic,,,"criticality",equals,critical
+Internal Hosts,All assets on RFC1918 networks,important,dynamic,,"10.0.0.0/8;172.16.0.0/12;192.168.0.0/16",locality,equals,internal
+Database Servers,All database servers,business_critical,dynamic,Internal Hosts,,role,equals,database_server
+Sales Laptops,Sales team laptops,important,static,Workstations,"10.10.50.0/24",tag,contains,sales

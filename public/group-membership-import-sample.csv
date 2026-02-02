@@ -1,0 +1,6 @@
+asset_id,group_id
+asset-001,grp-critical
+asset-002,grp-internet-facing
+asset-003,grp-databases
+asset-004,grp-scanners
+asset-006,grp-iot

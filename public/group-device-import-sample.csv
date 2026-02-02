@@ -1,0 +1,4 @@
+hostname,ipv4,mac
+dc01.corp.acme.com,10.0.1.10,00:1A:2B:3C:4D:5E
+web-prod-01.dmz.acme.com,192.168.100.10,00:1A:2B:3C:4D:6F
+db-prod-master.corp.acme.com,10.0.2.50,00:1A:2B:3C:4D:7A
