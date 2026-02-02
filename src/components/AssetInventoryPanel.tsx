@@ -220,10 +220,10 @@ export const AssetInventoryPanel = ({
     <div className="flex-1 flex h-full overflow-hidden bg-background min-h-0">
       {/* Filter Sidebar */}
       {showFilters && (
-        <div className="w-64 border-r border-border bg-card flex flex-col">
-          <div className="p-4 border-b border-border flex items-center justify-between">
+        <div className="w-72 border-r border-border bg-card flex flex-col">
+          <div className="p-4 border-b border-border flex items-center justify-between bg-secondary/20">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Filter className="h-4 w-4" />
+              <Filter className="h-4 w-4 text-primary" />
               Faceted Filters
             </h3>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowFilters(false)}>
@@ -231,41 +231,53 @@ export const AssetInventoryPanel = ({
             </Button>
           </div>
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-6">
+            <div className="p-4 space-y-5">
+              {/* Criticality Section */}
               <div className="space-y-3">
-                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Criticality</Label>
-                <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    Criticality
+                  </Label>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   {['Critical', 'High', 'Medium', 'Low'].map(level => (
-                    <div key={level} className="flex items-center gap-2">
+                    <label 
+                      key={level} 
+                      htmlFor={`crit-${level}`} 
+                      className="flex items-center gap-2 p-2 rounded-md border border-border/60 hover:bg-secondary/40 transition-colors cursor-pointer"
+                    >
                       <Checkbox id={`crit-${level}`} />
-                      <label htmlFor={`crit-${level}`} className="text-xs cursor-pointer">{level}</label>
-                    </div>
+                      <span className="text-xs">{level}</span>
+                    </label>
                   ))}
                 </div>
               </div>
+              
               <Separator />
+              
+              {/* Locality Section */}
               <div className="space-y-3">
-                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Locality (from Network Localities)
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Locality (Network Segments)
                 </Label>
-                <div className="rounded-lg border border-border/60 bg-secondary/20 p-3 space-y-3">
+                <div className="space-y-3">
                   {localityGroups.map(([type, localities]) => {
                     const selectedCount = localities.filter((locality) =>
                       selectedLocalityIds.includes(locality.id),
                     ).length;
                     return (
-                      <div key={type} className="rounded-md border border-border/60 bg-background/60 p-2">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wide">
+                      <div key={type} className="rounded-lg border border-border/60 bg-secondary/10 overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2 bg-secondary/20 border-b border-border/40">
+                          <p className="text-[11px] font-semibold text-foreground uppercase tracking-wide">
                             {formatLocalityType(type)}
                           </p>
                           {selectedCount > 0 && (
-                            <span className="text-[10px] text-primary font-medium">
-                              {selectedCount} selected
-                            </span>
+                            <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] h-5 px-1.5">
+                              {selectedCount}
+                            </Badge>
                           )}
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="p-2 space-y-1.5">
                           {localities.map((locality) => {
                             const id = `loc-${locality.id}`;
                             const checked = selectedLocalityIds.includes(locality.id);
@@ -274,10 +286,10 @@ export const AssetInventoryPanel = ({
                                 key={locality.id}
                                 htmlFor={id}
                                 className={cn(
-                                  "flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors",
+                                  "flex items-center justify-between gap-2 rounded-md border px-2.5 py-2 text-xs transition-all cursor-pointer",
                                   checked
-                                    ? "border-primary/40 bg-primary/10 text-primary"
-                                    : "border-border/60 bg-background hover:bg-secondary/40",
+                                    ? "border-primary/50 bg-primary/10 text-primary shadow-sm"
+                                    : "border-border/50 bg-background hover:bg-secondary/30 hover:border-border",
                                 )}
                               >
                                 <span className="flex items-center gap-2">
@@ -286,9 +298,9 @@ export const AssetInventoryPanel = ({
                                     checked={checked}
                                     onCheckedChange={() => toggleLocality(locality.id)}
                                   />
-                                  <span>{locality.name}</span>
+                                  <span className="font-medium">{locality.name}</span>
                                 </span>
-                                <span className="text-[10px] text-muted-foreground font-mono">
+                                <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded">
                                   {locality.cidrBlocks[0]}
                                 </span>
                               </label>
@@ -298,53 +310,69 @@ export const AssetInventoryPanel = ({
                       </div>
                     );
                   })}
-                  <div className="rounded-md border border-dashed border-border/60 bg-background/50 p-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wide">
+                  
+                  {/* Unknown locality */}
+                  <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border/40">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
                         Unknown
                       </p>
                     </div>
-                    <label
-                      htmlFor="loc-unknown"
-                      className={cn(
-                        "flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors",
-                        selectedLocalityIds.includes("unknown")
-                          ? "border-primary/40 bg-primary/10 text-primary"
-                          : "border-border/60 bg-background hover:bg-secondary/40",
-                      )}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Checkbox
-                          id="loc-unknown"
-                          checked={selectedLocalityIds.includes("unknown")}
-                          onCheckedChange={() => toggleLocality("unknown")}
-                        />
-                        <span>Unmatched CIDR</span>
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-mono">—</span>
-                    </label>
+                    <div className="p-2">
+                      <label
+                        htmlFor="loc-unknown"
+                        className={cn(
+                          "flex items-center justify-between gap-2 rounded-md border px-2.5 py-2 text-xs transition-all cursor-pointer",
+                          selectedLocalityIds.includes("unknown")
+                            ? "border-primary/50 bg-primary/10 text-primary shadow-sm"
+                            : "border-border/50 bg-background hover:bg-secondary/30",
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Checkbox
+                            id="loc-unknown"
+                            checked={selectedLocalityIds.includes("unknown")}
+                            onCheckedChange={() => toggleLocality("unknown")}
+                          />
+                          <span className="font-medium">Unmatched CIDR</span>
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
+              
               <Separator />
+              
+              {/* Exposure Section */}
               <div className="space-y-3">
-                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Exposure</Label>
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Exposure
+                </Label>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+                  <label 
+                    htmlFor="exp-public" 
+                    className="flex items-center gap-2 p-2 rounded-md border border-border/60 hover:bg-secondary/40 transition-colors cursor-pointer"
+                  >
                     <Checkbox id="exp-public" />
-                    <label htmlFor="exp-public" className="text-xs cursor-pointer">Publicly Exposed</label>
-                  </div>
-                  <div className="flex items-center gap-2">
+                    <span className="text-xs">Publicly Exposed</span>
+                  </label>
+                  <label 
+                    htmlFor="exp-internal" 
+                    className="flex items-center gap-2 p-2 rounded-md border border-border/60 hover:bg-secondary/40 transition-colors cursor-pointer"
+                  >
                     <Checkbox id="exp-internal" />
-                    <label htmlFor="exp-internal" className="text-xs cursor-pointer">Internal Only</label>
-                  </div>
+                    <span className="text-xs">Internal Only</span>
+                  </label>
                 </div>
               </div>
             </div>
           </ScrollArea>
-          <div className="p-4 border-t border-border">
-            <Button variant="outline" size="sm" className="w-full text-xs" onClick={handleResetAll}>
-              Reset All
+          <div className="p-3 border-t border-border bg-secondary/10">
+            <Button variant="outline" size="sm" className="w-full text-xs gap-2" onClick={handleResetAll}>
+              <X className="h-3 w-3" />
+              Reset All Filters
             </Button>
           </div>
         </div>

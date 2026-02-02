@@ -20,12 +20,10 @@ export const NewAssetsWidget = ({ assets, onSelectAsset }: NewAssetsWidgetProps)
     return isNewAsset(dateStr, newAssetHighlightDays);
   });
 
-  if (newAssets.length === 0) {
-    return null;
-  }
+  const count = newAssets.length;
 
   return (
-    <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 rounded-lg overflow-hidden">
+    <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 rounded-lg overflow-hidden h-full flex flex-col">
       <div className="px-4 py-3 border-b border-emerald-500/20 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-emerald-500/20 rounded-md">
@@ -37,47 +35,53 @@ export const NewAssetsWidget = ({ assets, onSelectAsset }: NewAssetsWidgetProps)
           </div>
         </div>
         <Badge className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30 text-xs">
-          {newAssets.length} new
+          {count} new
         </Badge>
       </div>
       
-      <ScrollArea className="max-h-[200px]">
-        <div className="p-2 space-y-1">
-          {newAssets.slice(0, 8).map((asset) => {
-            const daysAgo = getNewAssetDays(asset.firstSeen.split(' ')[0]);
-            return (
-              <Tooltip key={asset.id}>
-                <TooltipTrigger asChild>
-                  <div
-                    className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer hover:bg-emerald-500/10 transition-colors group"
-                    onClick={() => onSelectAsset(asset.id)}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Sparkles className="h-3 w-3 text-emerald-500 flex-shrink-0" />
-                      <span className="text-sm font-medium truncate">{asset.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {daysAgo === 0 ? 'Today' : `${daysAgo}d ago`}
-                      </span>
-                      <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">{asset.ip} - {asset.deviceType}</p>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-          {newAssets.length > 8 && (
-            <div className="px-3 py-2 text-xs text-muted-foreground text-center">
-              +{newAssets.length - 8} more new assets
-            </div>
-          )}
+      {count === 0 ? (
+        <div className="flex-1 flex items-center justify-center p-6 text-center">
+          <p className="text-xs text-muted-foreground">No new assets discovered</p>
         </div>
-      </ScrollArea>
+      ) : (
+        <ScrollArea className="flex-1 max-h-[200px]">
+          <div className="p-2 space-y-1">
+            {newAssets.slice(0, 8).map((asset) => {
+              const daysAgo = getNewAssetDays(asset.firstSeen.split(' ')[0]);
+              return (
+                <Tooltip key={asset.id}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer hover:bg-emerald-500/10 transition-colors group"
+                      onClick={() => onSelectAsset(asset.id)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Sparkles className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                        <span className="text-sm font-medium truncate">{asset.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {daysAgo === 0 ? 'Today' : `${daysAgo}d ago`}
+                        </span>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">{asset.ip} - {asset.deviceType}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+            {count > 8 && (
+              <div className="px-3 py-2 text-xs text-muted-foreground text-center">
+                +{count - 8} more new assets
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 };
