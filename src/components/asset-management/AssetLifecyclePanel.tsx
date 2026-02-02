@@ -6,12 +6,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { updateLifecycleSettings, useLifecycleSettings } from '@/state/lifecycleSettings';
 
 export function AssetLifecyclePanel() {
-  const { staleAfterDays } = useLifecycleSettings();
+  const { staleAfterDays, newAssetHighlightDays } = useLifecycleSettings();
 
   const handleStaleDaysChange = (value: string) => {
     const parsed = Number(value);
     if (Number.isNaN(parsed)) return;
     updateLifecycleSettings({ staleAfterDays: Math.max(1, Math.floor(parsed)) });
+  };
+
+  const handleNewAssetDaysChange = (value: string) => {
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) return;
+    updateLifecycleSettings({ newAssetHighlightDays: Math.max(1, Math.floor(parsed)) });
   };
 
   return (
@@ -40,7 +46,13 @@ export function AssetLifecyclePanel() {
           </div>
           <div className="space-y-2">
             <Label>New asset highlight window (days)</Label>
-            <Input type="number" min={1} defaultValue={7} className="bg-input" />
+            <Input
+              type="number"
+              min={1}
+              value={newAssetHighlightDays}
+              onChange={(event) => handleNewAssetDaysChange(event.target.value)}
+              className="bg-input"
+            />
           </div>
           <div className="space-y-2">
             <Label>Ownership review cadence (days)</Label>
