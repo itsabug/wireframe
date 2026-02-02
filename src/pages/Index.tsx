@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { deviceRoles, roleToAssetMapping } from "@/data/asset-dashboard";
 import { unifiedAssets } from "@/data/unified-assets";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { 
   mockFlows, 
   mockThreatEvents, 
@@ -125,33 +126,49 @@ const Index = () => {
       {/* Top Navigation */}
       <TopNavBar />
 
-      {/* Main Tabs */}
+      {/* Main Tabs with integrated back button */}
       <div className="border-b border-border bg-card px-6">
-        <Tabs
-          value={activeMainTab}
-          onValueChange={(v) => {
-            const nextTab = v as "dashboard" | "inventory";
-            setActiveMainTab(nextTab);
-            if (nextTab === "inventory") {
-              setInventoryView("list");
-            }
-          }}
-        >
-          <TabsList className="h-10 bg-transparent border-0 p-0">
-            <TabsTrigger 
-              value="dashboard"
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4"
+        <div className="flex items-center gap-4">
+          {/* Back button - only show when viewing asset detail */}
+          {activeMainTab === "inventory" && inventoryView === "detail" && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setInventoryView("list")}
+              className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
             >
-              Asset Dashboard
-            </TabsTrigger>
-            <TabsTrigger 
-              value="inventory"
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4"
-            >
-              Asset Inventory
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+              <ArrowLeft className="h-4 w-4" />
+              Back to Inventory
+            </Button>
+          )}
+          
+          <Tabs
+            value={activeMainTab}
+            onValueChange={(v) => {
+              const nextTab = v as "dashboard" | "inventory";
+              setActiveMainTab(nextTab);
+              if (nextTab === "inventory") {
+                setInventoryView("list");
+              }
+            }}
+            className={activeMainTab === "inventory" && inventoryView === "detail" ? "border-l border-border pl-4" : ""}
+          >
+            <TabsList className="h-10 bg-transparent border-0 p-0">
+              <TabsTrigger 
+                value="dashboard"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4"
+              >
+                Asset Dashboard
+              </TabsTrigger>
+              <TabsTrigger 
+                value="inventory"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4"
+              >
+                Asset Inventory
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -179,36 +196,27 @@ const Index = () => {
             onClearFilters={handleClearFilters}
             onSelectAsset={handleSelectAsset}
           />
+        ) : selectedAsset ? (
+          <AssetDetailPanel
+            asset={selectedAsset}
+            events={mockThreatEvents}
+            peers={mockPeers}
+            mitreCategories={mockMitreCategories}
+            flows={mockFlows}
+            protocols={mockProtocolBreakdown}
+            anomalies={mockAnomalies}
+            applications={mockApplications}
+            conversations={mockConversations}
+            qosData={mockQoSData}
+            timelineEvents={mockTimelineEvents}
+            changeHistory={mockChangeHistory}
+            networkBehavior={mockNetworkBehavior}
+            dnsData={mockDNSData}
+            dhcpData={mockDHCPData}
+          />
         ) : (
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-            <div className="border-b border-border bg-card px-6 py-2">
-              <Button variant="ghost" size="sm" onClick={() => setInventoryView("list")}>
-                Back
-              </Button>
-            </div>
-            {selectedAsset ? (
-              <AssetDetailPanel
-                asset={selectedAsset}
-                events={mockThreatEvents}
-                peers={mockPeers}
-                mitreCategories={mockMitreCategories}
-                flows={mockFlows}
-                protocols={mockProtocolBreakdown}
-                anomalies={mockAnomalies}
-                applications={mockApplications}
-                conversations={mockConversations}
-                qosData={mockQoSData}
-                timelineEvents={mockTimelineEvents}
-                changeHistory={mockChangeHistory}
-                networkBehavior={mockNetworkBehavior}
-                dnsData={mockDNSData}
-                dhcpData={mockDHCPData}
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                No assets match the current filters.
-              </div>
-            )}
+          <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+            No assets match the current filters.
           </div>
         )}
       </div>

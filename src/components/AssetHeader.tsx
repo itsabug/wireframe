@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   ChevronDown, 
-  MoreHorizontal, 
   MessageSquare, 
   UserPlus, 
   Download, 
@@ -15,7 +14,8 @@ import {
   Flag,
   Eye,
   Copy,
-  Trash2
+  Layers,
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLifecycleSettings } from "@/state/lifecycleSettings";
@@ -28,6 +28,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface AssetHeaderProps {
   asset: Asset;
@@ -62,14 +67,17 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
   const statusLabel =
     isStale && staleDays !== null ? `Stale ${staleDays}d` : formatLabel(asset.status);
 
+  const hasTags = asset.tags && asset.tags.length > 0;
+  const hasGroups = asset.groupNames && asset.groupNames.length > 0;
+
   return (
     <div className="bg-card border-b border-border px-6 py-4">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-6">
         {/* Left: Asset Identity */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4 min-w-0 flex-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="cursor-help">
+              <div className="cursor-help flex-shrink-0">
                 <ScoreBadge score={asset.threatScore} label="" size="lg" showLabel={false} />
               </div>
             </TooltipTrigger>
@@ -78,18 +86,46 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
             </TooltipContent>
           </Tooltip>
           
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
+          <div className="space-y-2 min-w-0 flex-1">
+            {/* Row 1: Name + IP + Status badges */}
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-semibold text-foreground">{asset.name}</h1>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-muted-foreground font-mono text-sm cursor-help">{asset.ip}</span>
+                  <span className="text-muted-foreground font-mono text-sm cursor-help bg-muted/50 px-2 py-0.5 rounded">
+                    {asset.ip}
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">Click to copy IP address</p>
                 </TooltipContent>
               </Tooltip>
+              
+              {/* Status badges inline */}
+              <div className="flex items-center gap-1.5">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-[10px] px-2 py-0.5",
+                    isStale && "text-warning bg-warning/10 border-warning/30",
+                  )}
+                >
+                  {statusLabel}
+                </Badge>
+                {asset.criticality && (
+                  <Badge className={`badge-${asset.criticality} text-[10px] px-2 py-0.5`}>
+                    {formatLabel(asset.criticality)}
+                  </Badge>
+                )}
+                {asset.locality && (
+                  <Badge className={`badge-${asset.locality} text-[10px] px-2 py-0.5`}>
+                    {formatLabel(asset.locality)}
+                  </Badge>
+                )}
+              </div>
             </div>
+            
+            {/* Row 2: Device type, role, owner */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{asset.deviceType}</span>
               <span className="opacity-40">•</span>
@@ -97,73 +133,90 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
               <span className="opacity-40">•</span>
               <span>Owner: {asset.owner}</span>
             </div>
-            {/* Tags */}
-            {asset.tags && asset.tags.length > 0 && (
-              <div className="flex items-center gap-1.5 mt-1">
-                <Tag className="h-3 w-3 text-muted-foreground" />
-                {asset.tags.map((tag, index) => (
-                  <Tooltip key={index}>
-                    <TooltipTrigger asChild>
-                      <Badge 
-                        variant="outline" 
-                        className="text-xs px-2 py-0 cursor-help bg-primary/5 border-primary/20 text-primary"
-                      >
-                        {tag}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Asset tag: {tag}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
+
+            {/* Row 3: Tags & Groups in compact hover cards */}
+            <div className="flex items-center gap-3">
+              {/* Tags hover card */}
+              {hasTags && (
+                <HoverCard>
+                  <HoverCardTrigger asChild>
+                    <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <Tag className="h-3 w-3" />
+                      <span>{asset.tags!.length} tag{asset.tags!.length !== 1 ? 's' : ''}</span>
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-64 p-3" align="start">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        <Tag className="h-3 w-3" />
+                        Asset Tags
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {asset.tags!.map((tag, index) => (
+                          <Badge 
+                            key={index}
+                            variant="outline" 
+                            className="text-xs px-2 py-0.5 bg-primary/5 border-primary/20 text-primary"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              )}
+
+              {/* Groups hover card */}
+              {hasGroups && (
+                <HoverCard>
+                  <HoverCardTrigger asChild>
+                    <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <Layers className="h-3 w-3" />
+                      <span>{asset.groupNames!.length} group{asset.groupNames!.length !== 1 ? 's' : ''}</span>
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-64 p-3" align="start">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        <Layers className="h-3 w-3" />
+                        Group Membership
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {asset.groupNames!.map((group, index) => (
+                          <Badge 
+                            key={index}
+                            variant="secondary" 
+                            className="text-xs px-2 py-0.5"
+                          >
+                            {group}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              )}
+
+              {/* Quick stats */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground border-l border-border pl-3">
+                <span className="flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3 text-warning" />
+                  3 alerts
+                </span>
+                <span className="opacity-40">•</span>
+                <span>
+                  Identity: {asset.confidenceScore >= 85 ? "High" : asset.confidenceScore >= 65 ? "Medium" : "Low"}
+                </span>
               </div>
-            )}
-            <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-              <Badge variant="secondary" className="text-[10px] px-2 py-0">
-                Open Alerts: 3
-              </Badge>
-              <Badge variant="secondary" className="text-[10px] px-2 py-0">
-                Incident: None
-              </Badge>
-              <Badge variant="secondary" className="text-[10px] px-2 py-0">
-                Identity: {asset.confidenceScore >= 85 ? "High" : asset.confidenceScore >= 65 ? "Medium" : "Low"}
-              </Badge>
             </div>
-            {(asset.status || asset.criticality || asset.locality || asset.groupNames?.length) && (
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "text-[10px] px-2 py-0",
-                    isStale && "text-warning bg-warning/10 border-warning/30",
-                  )}
-                >
-                  {statusLabel}
-                </Badge>
-                {asset.criticality && (
-                  <Badge className={`badge-${asset.criticality} text-[10px] px-2 py-0`}>
-                    {formatLabel(asset.criticality)}
-                  </Badge>
-                )}
-                {asset.locality && (
-                  <Badge className={`badge-${asset.locality} text-[10px] px-2 py-0`}>
-                    {formatLabel(asset.locality)}
-                  </Badge>
-                )}
-                {asset.groupNames && asset.groupNames.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px] px-2 py-0">
-                    Groups: {asset.groupNames.length}
-                  </Badge>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
         {/* Right: Scores, Metadata and Actions */}
-        <div className="flex items-start gap-6">
+        <div className="flex items-start gap-4 flex-shrink-0">
           {/* Scores */}
-          <div className="flex gap-4">
+          <div className="flex gap-4 border-r border-border pr-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="text-center cursor-help">
@@ -189,7 +242,7 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
           </div>
 
           {/* Timestamps */}
-          <div className="flex gap-4 text-sm border-l border-border pl-4">
+          <div className="flex gap-4 text-sm border-r border-border pr-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="cursor-help">
@@ -214,7 +267,7 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
             </Tooltip>
           </div>
           
-          {/* Actions Dropdown - Fixed alignment */}
+          {/* Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2 h-9">
