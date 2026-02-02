@@ -1,5 +1,6 @@
 import { Asset } from "@/types/asset";
 import { ScoreBadge } from "./ScoreBadge";
+import { LifecycleStatusBadge } from "./LifecycleStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -14,12 +15,9 @@ import {
   Flag,
   Eye,
   Copy,
-  Layers,
-  Sparkles
+  Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLifecycleSettings, isNewAsset, getNewAssetDays } from "@/state/lifecycleSettings";
-import { getStaleInfo } from "@/lib/asset-lifecycle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,14 +60,6 @@ const formatLabel = (value: string) =>
     .join(" ");
 
 export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps) => {
-  const { staleAfterDays, newAssetHighlightDays } = useLifecycleSettings();
-  const { isStale, staleDays } = getStaleInfo(asset.lastSeen, staleAfterDays);
-  
-  // Check if this is a new asset
-  const dateStr = asset.firstSeen.split(' ')[0];
-  const isNew = isNewAsset(dateStr, newAssetHighlightDays);
-  const newDaysAgo = isNew ? getNewAssetDays(dateStr) : null;
-
   const hasTags = asset.tags && asset.tags.length > 0;
   const hasGroups = asset.groupNames && asset.groupNames.length > 0;
 
@@ -80,7 +70,7 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
         {/* Left: Asset Identity */}
         <div className="flex items-start gap-4 min-w-0 flex-1">
           {/* Threat Score Badge */}
-          <div className="relative flex-shrink-0">
+          <div className="flex-shrink-0">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="cursor-help">
@@ -91,27 +81,16 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
                 <p className="text-xs">Threat Score: {asset.threatScore}/100</p>
               </TooltipContent>
             </Tooltip>
-            {/* New asset indicator on the badge */}
-            {isNew && (
-              <div className="absolute -top-1 -right-1 p-0.5 bg-emerald-500 rounded-full">
-                <Sparkles className="h-2.5 w-2.5 text-white" />
-              </div>
-            )}
           </div>
           
           <div className="space-y-1.5 min-w-0 flex-1">
-            {/* Row 1: Name + IP + New badge */}
+            {/* Row 1: Name + IP + Lifecycle Badge */}
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-semibold text-foreground">{asset.name}</h1>
               <span className="text-muted-foreground font-mono text-sm bg-muted/50 px-2 py-0.5 rounded">
                 {asset.ip}
               </span>
-              {isNew && (
-                <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px] px-2 py-0.5 gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  New {newDaysAgo === 0 ? 'today' : `${newDaysAgo}d ago`}
-                </Badge>
-              )}
+              <LifecycleStatusBadge firstSeen={asset.firstSeen} lastSeen={asset.lastSeen} />
             </div>
             
             {/* Row 2: Device metadata */}
@@ -126,15 +105,6 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
             {/* Row 3: Compact status line with popovers for tags/groups */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* Status badges */}
-              <Badge
-                variant="secondary"
-                className={cn(
-                  "text-[10px] px-2 py-0.5",
-                  isStale && "text-warning bg-warning/10 border-warning/30",
-                )}
-              >
-                {isStale && staleDays !== null ? `Stale ${staleDays}d` : formatLabel(asset.status)}
-              </Badge>
               {asset.criticality && (
                 <Badge className={`badge-${asset.criticality} text-[10px] px-2 py-0.5`}>
                   {formatLabel(asset.criticality)}
