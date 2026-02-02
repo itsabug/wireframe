@@ -49,6 +49,7 @@ interface TrustListsPanelProps {
   onEdit?: (entry: TrustEntry) => void;
   onDelete?: (entryId: string) => void;
   onToggle?: (entryId: string, isActive: boolean) => void;
+  onNavigateToRules?: () => void;
 }
 
 const typeIcons: Record<TrustType, React.ReactNode> = {
@@ -112,6 +113,7 @@ export function TrustListsPanel({
   onAdd,
   onEdit,
   onDelete,
+  onNavigateToRules,
 }: TrustListsPanelProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEntry, setNewEntry] = useState<{
@@ -547,12 +549,20 @@ export function TrustListsPanel({
       {/* Info */}
       <div className="flex items-start gap-3 p-4 bg-info/10 rounded-lg border border-info/20">
         <AlertTriangle className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
-        <div className="text-sm">
+        <div className="text-sm flex-1">
           <p className="font-medium text-foreground">Trust entries affect detection behavior</p>
           <p className="text-muted-foreground mt-1">
             Adding entries to trust lists will suppress related detections. Ensure proper justification 
             and approval before adding entries to prevent security blind spots.
           </p>
+          {onNavigateToRules && (
+            <button
+              onClick={onNavigateToRules}
+              className="mt-2 text-primary hover:underline text-xs font-medium"
+            >
+              Configure per-rule suppression in Detection Rules →
+            </button>
+          )}
         </div>
       </div>
     </div>
