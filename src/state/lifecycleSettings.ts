@@ -2,10 +2,12 @@ import { useSyncExternalStore } from "react";
 
 export type LifecycleSettings = {
   staleAfterDays: number;
+  newAssetHighlightDays: number;
 };
 
 const DEFAULT_SETTINGS: LifecycleSettings = {
   staleAfterDays: 30,
+  newAssetHighlightDays: 7,
 };
 
 let currentSettings: LifecycleSettings = { ...DEFAULT_SETTINGS };
@@ -25,4 +27,20 @@ export const useLifecycleSettings = () => {
   };
 
   return useSyncExternalStore(subscribe, getLifecycleSettings, getLifecycleSettings);
+};
+
+// Helper to check if an asset is "new" based on firstSeen date
+export const isNewAsset = (firstSeen: string, highlightDays: number): boolean => {
+  const firstSeenDate = new Date(firstSeen);
+  const now = new Date();
+  const diffMs = now.getTime() - firstSeenDate.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return diffDays <= highlightDays;
+};
+
+export const getNewAssetDays = (firstSeen: string): number => {
+  const firstSeenDate = new Date(firstSeen);
+  const now = new Date();
+  const diffMs = now.getTime() - firstSeenDate.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 };

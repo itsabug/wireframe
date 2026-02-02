@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { deviceRoles, roleToAssetMapping } from "@/data/asset-dashboard";
 import { unifiedAssets } from "@/data/unified-assets";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import { 
   mockFlows, 
   mockThreatEvents, 
@@ -121,27 +121,16 @@ const Index = () => {
     ? deviceRoles.find((role) => role.id === activeRoleFilter)?.label
     : activeProtocolFilter;
 
+  const isViewingAssetDetail = activeMainTab === "inventory" && inventoryView === "detail";
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Top Navigation */}
       <TopNavBar />
 
-      {/* Main Tabs with integrated back button */}
+      {/* Main Tabs with breadcrumb for asset detail */}
       <div className="border-b border-border bg-card px-6">
-        <div className="flex items-center gap-4">
-          {/* Back button - only show when viewing asset detail */}
-          {activeMainTab === "inventory" && inventoryView === "detail" && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setInventoryView("list")}
-              className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Inventory
-            </Button>
-          )}
-          
+        <div className="flex items-center h-10">
           <Tabs
             value={activeMainTab}
             onValueChange={(v) => {
@@ -151,7 +140,6 @@ const Index = () => {
                 setInventoryView("list");
               }
             }}
-            className={activeMainTab === "inventory" && inventoryView === "detail" ? "border-l border-border pl-4" : ""}
           >
             <TabsList className="h-10 bg-transparent border-0 p-0">
               <TabsTrigger 
@@ -168,6 +156,20 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          
+          {/* Breadcrumb for asset detail view */}
+          {isViewingAssetDetail && selectedAsset && (
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border text-sm">
+              <button
+                onClick={() => setInventoryView("list")}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                All Assets
+              </button>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <span className="text-foreground font-medium">{selectedAsset.name}</span>
+            </div>
+          )}
         </div>
       </div>
 

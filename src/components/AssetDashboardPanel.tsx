@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScoreBadge } from "./ScoreBadge";
+import { NewAssetsWidget } from "./NewAssetsWidget";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -105,41 +106,49 @@ export const AssetDashboardPanel = ({
           </div>
 
           <div className="p-6 space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-secondary/30 border border-border/50 rounded-lg p-4 flex items-center gap-4">
-                <div className="p-2.5 bg-primary/10 rounded-lg">
-                  <Activity className="h-5 w-5 text-primary" />
+            {/* Top row: Stats + New Assets Widget */}
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-9 grid grid-cols-3 gap-4">
+                <div className="bg-secondary/30 border border-border/50 rounded-lg p-4 flex items-center gap-4">
+                  <div className="p-2.5 bg-primary/10 rounded-lg">
+                    <Activity className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Discovery Coverage</p>
+                    <p className="text-xl font-bold font-mono text-foreground">92%</p>
+                    <p className="text-[10px] text-muted-foreground">8 subnets uncovered</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">Discovery Coverage</p>
-                  <p className="text-xl font-bold font-mono text-foreground">92%</p>
-                  <p className="text-[10px] text-muted-foreground">8 subnets uncovered</p>
+
+                <div className="bg-secondary/30 border border-border/50 rounded-lg p-4 flex items-center gap-4">
+                  <div className="p-2.5 bg-chart-2/10 rounded-lg">
+                    <Server className="h-5 w-5 text-chart-2" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Flow Sources</p>
+                    <p className="text-xl font-bold font-mono text-foreground">18/20</p>
+                    <p className="text-[10px] text-muted-foreground">2 degraded</p>
+                  </div>
+                </div>
+
+                <div
+                  className="bg-destructive/5 border border-destructive/30 rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:bg-destructive/10 transition-colors"
+                  onClick={() => onViewFilterChange("rogue")}
+                >
+                  <div className="p-2.5 bg-destructive/20 rounded-lg">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Rogue Assets</p>
+                    <p className="text-xl font-bold font-mono text-destructive">23</p>
+                    <p className="text-[10px] text-muted-foreground">Unmanaged or unknown</p>
+                  </div>
                 </div>
               </div>
-
-              <div className="bg-secondary/30 border border-border/50 rounded-lg p-4 flex items-center gap-4">
-                <div className="p-2.5 bg-chart-2/10 rounded-lg">
-                  <Server className="h-5 w-5 text-chart-2" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">Flow Sources</p>
-                  <p className="text-xl font-bold font-mono text-foreground">18/20</p>
-                  <p className="text-[10px] text-muted-foreground">2 degraded</p>
-                </div>
-              </div>
-
-              <div
-                className="bg-destructive/5 border border-destructive/30 rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:bg-destructive/10 transition-colors"
-                onClick={() => onViewFilterChange("rogue")}
-              >
-                <div className="p-2.5 bg-destructive/20 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">Rogue Assets</p>
-                  <p className="text-xl font-bold font-mono text-destructive">23</p>
-                  <p className="text-[10px] text-muted-foreground">Unmanaged or unknown</p>
-                </div>
+              
+              {/* New Assets Widget */}
+              <div className="col-span-3">
+                <NewAssetsWidget assets={assets} onSelectAsset={onSelectAsset} />
               </div>
             </div>
 
