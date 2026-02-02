@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AlertTriangle, ChevronRight, Save, Server, FolderTree, Globe, Layers } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Save, Server, FolderTree, Layers, Shield } from 'lucide-react';
 import { mockNetworkSegments } from '@/data/mock-asset-data';
 
 type Severity = 'critical' | 'high' | 'medium' | 'low';
@@ -536,7 +536,7 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
   );
 
   return (
-    <div className="flex min-h-0 h-full overflow-hidden border border-border rounded-lg">
+    <div className="flex min-h-0 h-full overflow-hidden">
       {/* Left sidebar: Rule list */}
       <div className="w-80 border-r border-border bg-card flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-border space-y-3">
@@ -783,28 +783,21 @@ export function DetectionRulesPanel({ assets, groups }: DetectionRulesPanelProps
           </Tabs>
         </div>
 
-        {/* Global Suppression */}
-        <div className="border border-border rounded-lg p-5 bg-card space-y-4">
+        {/* Global Suppression Link */}
+        <div className="border border-border rounded-lg p-5 bg-card space-y-3">
           <div>
             <h4 className="text-sm font-semibold text-foreground">Global Suppression Rules</h4>
             <p className="text-xs text-muted-foreground mt-1">
-              Define conditions to automatically suppress alerts (e.g., vulnerability scanners, backup windows).
+              Rule-wide exclusions are managed in Trust Lists with detection-scoped entries.
             </p>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 border border-border/50 rounded-lg bg-secondary/20">
-              <div>
-                <p className="text-sm font-medium">Vulnerability Scanner Exclusion</p>
-                <p className="text-xs text-muted-foreground">Suppress all alerts from 10.0.5.50 (Qualys Scanner)</p>
-              </div>
-              <Switch checked={true} aria-label="Toggle suppression" />
-            </div>
-            <div className="flex items-center justify-between p-3 border border-border/50 rounded-lg bg-secondary/20">
-              <div>
-                <p className="text-sm font-medium">Backup Window Exclusion</p>
-                <p className="text-xs text-muted-foreground">Suppress alerts daily 02:00-04:00 for backup traffic</p>
-              </div>
-              <Switch checked={true} aria-label="Toggle suppression" />
+          <div className="flex items-center gap-3 p-3 border border-border/50 rounded-lg bg-secondary/20">
+            <Shield className="w-5 h-5 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Trust Lists</p>
+              <p className="text-xs text-muted-foreground">
+                Create detection-scoped trust entries to suppress alerts globally
+              </p>
             </div>
           </div>
         </div>

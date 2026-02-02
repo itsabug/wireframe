@@ -276,6 +276,10 @@ export function SettingsContent({ activePanel }: SettingsContentProps) {
                 onEdit={(e) => console.log('Edit entry:', e)}
                 onDelete={(id) => console.log('Delete entry:', id)}
                 onToggle={(id, active) => console.log('Toggle:', id, active)}
+                onNavigateToRules={() => {
+                  // This will be handled by parent - for now just log
+                  console.log('Navigate to Detection Rules');
+                }}
               />
             </div>
           </div>
@@ -283,10 +287,8 @@ export function SettingsContent({ activePanel }: SettingsContentProps) {
 
       case 'rules':
         return (
-          <div className="p-6 overflow-auto h-full">
-            <div className="max-w-5xl mx-auto">
-              <DetectionRulesPanel assets={unifiedGovernanceAssets} groups={mockAssetGroups} />
-            </div>
+          <div className="h-full overflow-hidden">
+            <DetectionRulesPanel assets={unifiedGovernanceAssets} groups={mockAssetGroups} />
           </div>
         );
 
