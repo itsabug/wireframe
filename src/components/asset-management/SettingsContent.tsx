@@ -68,9 +68,19 @@ export function SettingsContent({ activePanel }: SettingsContentProps) {
     console.log('Import group memberships CSV:', file.name);
   };
 
+  const handleAcceptAiGroup = (groupId: string) => {
+    console.log('Accept AI group:', groupId);
+    // In real implementation: update group source to 'user' and status to 'active'
+  };
+
+  const handleRejectAiGroup = (groupId: string) => {
+    console.log('Reject AI group:', groupId);
+    // In real implementation: update group status to 'rejected'
+  };
+
   const renderGroupsPanel = () => (
     <div className="flex flex-1 min-h-0 overflow-hidden">
-      <div className="w-72 min-h-0 h-full border-r border-border bg-card/50 flex-shrink-0">
+      <div className="w-80 min-h-0 h-full border-r border-border bg-card flex-shrink-0">
         <GroupTreeNavigation
           groups={mockAssetGroups}
           selectedGroupId={selectedGroupId}
@@ -78,6 +88,8 @@ export function SettingsContent({ activePanel }: SettingsContentProps) {
           onCreateGroup={handleCreateGroup}
           onEditGroup={handleEditGroup}
           onDeleteGroup={(id) => console.log('Delete group:', id)}
+          onAcceptAiGroup={handleAcceptAiGroup}
+          onRejectAiGroup={handleRejectAiGroup}
         />
       </div>
 

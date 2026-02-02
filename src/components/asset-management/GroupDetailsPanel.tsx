@@ -235,8 +235,33 @@ export function GroupDetailsPanel({
     setRules(rules.filter((_, i) => i !== index));
   };
 
+  const isAiSuggested = group?.source === 'ai_suggested' && group?.status === 'pending_review';
+
   return (
     <div className="flex flex-col h-full">
+      {/* AI Suggestion Banner */}
+      {isAiSuggested && group?.aiMetadata && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-full bg-amber-500/20">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-700">AI-Suggested Group</p>
+              <p className="text-xs text-amber-600/80 mt-0.5">{group.aiMetadata.reasoning}</p>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-xs text-muted-foreground">
+                  Confidence: <strong className="text-amber-600">{Math.round(group.aiMetadata.confidence * 100)}%</strong>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Method: <strong className="text-foreground">{group.aiMetadata.clusteringMethod}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div>
@@ -244,7 +269,19 @@ export function GroupDetailsPanel({
             {isNew ? 'Create New Group' : group?.name}
           </h3>
           {!isNew && group && (
-            <p className="text-xs text-muted-foreground">Group ID: {group.id}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-muted-foreground">ID: {group.id}</p>
+              {group.source && (
+                <span className={cn(
+                  "text-xs px-1.5 py-0.5 rounded",
+                  group.source === 'system' && "bg-blue-500/10 text-blue-600",
+                  group.source === 'user' && "bg-green-500/10 text-green-600",
+                  group.source === 'ai_suggested' && "bg-amber-500/10 text-amber-600"
+                )}>
+                  {group.source === 'ai_suggested' ? 'AI Suggested' : group.source}
+                </span>
+              )}
+            </div>
           )}
         </div>
         <div className="flex items-center gap-2">

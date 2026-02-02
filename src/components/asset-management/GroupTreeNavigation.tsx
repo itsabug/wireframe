@@ -13,7 +13,12 @@ import {
   ScanLine,
   AlertTriangle,
   MoreHorizontal,
-  Plus
+  Plus,
+  Sparkles,
+  Check,
+  X,
+  Cpu,
+  Eye
 } from 'lucide-react';
 import { AssetGroup } from '@/types/asset-management';
 import {
@@ -23,16 +28,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface TreeNode {
-  id: string;
-  name: string;
-  icon?: React.ReactNode;
-  children?: TreeNode[];
-  assetCount?: number;
-  isDefault?: boolean;
-  type?: 'group' | 'category';
-}
+import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface GroupTreeNavigationProps {
   groups: AssetGroup[];
@@ -41,18 +43,9 @@ interface GroupTreeNavigationProps {
   onCreateGroup?: () => void;
   onEditGroup?: (groupId: string) => void;
   onDeleteGroup?: (groupId: string) => void;
+  onAcceptAiGroup?: (groupId: string) => void;
+  onRejectAiGroup?: (groupId: string) => void;
 }
-
-const groupIcons: Record<string, React.ReactNode> = {
-  'grp-critical': <AlertTriangle className="w-4 h-4 text-critical" />,
-  'grp-internal': <Server className="w-4 h-4 text-internal" />,
-  'grp-external': <Globe className="w-4 h-4 text-external" />,
-  'grp-dmz': <Shield className="w-4 h-4 text-dmz" />,
-  'grp-cloud': <Cloud className="w-4 h-4 text-cloud" />,
-  'grp-guest': <Users className="w-4 h-4 text-guest" />,
-  'grp-scanners': <ScanLine className="w-4 h-4 text-info" />,
-  'grp-internet-facing': <Globe className="w-4 h-4 text-destructive" />,
-};
 
 const groupIconLibrary: Record<string, React.ReactNode> = {
   folder: <Folder className="w-4 h-4 text-muted-foreground" />,
@@ -72,164 +65,190 @@ export function GroupTreeNavigation({
   onCreateGroup,
   onEditGroup,
   onDeleteGroup,
+  onAcceptAiGroup,
+  onRejectAiGroup,
 }: GroupTreeNavigationProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
-    new Set(['cat-inside', 'cat-outside'])
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['system', 'user', 'ai'])
   );
 
-  const toggleNode = (nodeId: string) => {
-    const newExpanded = new Set(expandedNodes);
-    if (newExpanded.has(nodeId)) {
-      newExpanded.delete(nodeId);
+  const toggleSection = (sectionId: string) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(sectionId)) {
+      newExpanded.delete(sectionId);
     } else {
-      newExpanded.add(nodeId);
+      newExpanded.add(sectionId);
     }
-    setExpandedNodes(newExpanded);
+    setExpandedSections(newExpanded);
   };
 
-  // Organize groups into categories
-  const outsideGroupIds = new Set([
-    'grp-external',
-    'grp-internet-facing',
-    'grp-guest',
-    'grp-third-party',
-    'grp-saas',
-    'grp-external-apis',
-    'grp-cdn',
-    'grp-customer',
-  ]);
+  // Filter and categorize groups
   const filteredGroups = groups.filter(g =>
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const outsideGroups = filteredGroups.filter((group) => outsideGroupIds.has(group.id));
-  const insideGroups = filteredGroups.filter((group) => !outsideGroupIds.has(group.id));
+  const systemGroups = filteredGroups.filter(g => g.source === 'system');
+  const userGroups = filteredGroups.filter(g => g.source === 'user' && g.status === 'active');
+  const aiSuggestedGroups = filteredGroups.filter(g => g.source === 'ai_suggested' && g.status === 'pending_review');
 
-  const renderTreeItem = (group: AssetGroup, depth: number = 0) => {
-    const hasChildren = groups.some(g => g.parentId === group.id);
-    const isExpanded = expandedNodes.has(group.id);
+  const totalAssets = groups.reduce((sum, g) => sum + g.assetCount, 0);
+
+  const getGroupIcon = (group: AssetGroup) => {
+    if (group.icon && groupIconLibrary[group.icon]) {
+      return groupIconLibrary[group.icon];
+    }
+    
+    // Default icons based on source
+    if (group.source === 'system') {
+      return <Cpu className="w-4 h-4 text-muted-foreground" />;
+    }
+    if (group.source === 'ai_suggested') {
+      return <Sparkles className="w-4 h-4 text-amber-500" />;
+    }
+    return <Folder className="w-4 h-4 text-muted-foreground" />;
+  };
+
+  const renderGroupItem = (group: AssetGroup, isAiSuggested = false) => {
     const isSelected = selectedGroupId === group.id;
-    const children = groups.filter(g => g.parentId === group.id);
-    const icon = (group.icon && groupIconLibrary[group.icon]) || groupIcons[group.id] || (
-      <Folder className="w-4 h-4 text-muted-foreground" />
-    );
 
     return (
-      <div key={group.id}>
-        <div
-          className={cn(
-            'group flex items-center gap-1 px-2 py-1.5 text-sm cursor-pointer rounded transition-colors',
-            isSelected 
-              ? 'bg-primary/20 text-primary' 
-              : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
-          )}
-          style={{ paddingLeft: `${8 + depth * 16}px` }}
+      <div
+        key={group.id}
+        className={cn(
+          'group flex items-center gap-2 px-3 py-2 text-sm cursor-pointer rounded-md transition-colors',
+          isSelected 
+            ? 'bg-primary/15 text-primary border border-primary/30' 
+            : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+          isAiSuggested && 'border border-dashed border-amber-500/40 bg-amber-500/5'
+        )}
+      >
+        <div 
+          className="flex items-center gap-2 flex-1 min-w-0"
+          onClick={() => onSelectGroup(group.id)}
         >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleNode(group.id);
-            }}
-            className={cn(
-              'p-0.5 rounded hover:bg-muted',
-              !hasChildren && 'invisible'
-            )}
-          >
-            {isExpanded ? (
-              <ChevronDown className="w-3 h-3" />
-            ) : (
-              <ChevronRight className="w-3 h-3" />
-            )}
-          </button>
-          
-          <div 
-            className="flex items-center gap-2 flex-1 min-w-0"
-            onClick={() => onSelectGroup(group.id)}
-          >
-            {isExpanded && hasChildren ? (
-              <FolderOpen className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            ) : (
-              icon
-            )}
-            <span className="truncate flex-1">{group.name}</span>
-            <span className="text-xs text-muted-foreground flex-shrink-0">
-              {group.assetCount}
-            </span>
-          </div>
+          {getGroupIcon(group)}
+          <span className="truncate flex-1">{group.name}</span>
+          <span className="text-xs text-muted-foreground flex-shrink-0 tabular-nums">
+            {group.assetCount}
+          </span>
+        </div>
 
+        {isAiSuggested && group.aiMetadata && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1">
+                  <Badge 
+                    variant="outline" 
+                    className="text-[10px] px-1.5 py-0 h-5 bg-amber-500/10 text-amber-600 border-amber-500/30"
+                  >
+                    {Math.round(group.aiMetadata.confidence * 100)}%
+                  </Badge>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAcceptAiGroup?.(group.id);
+                    }}
+                    className="p-1 rounded hover:bg-green-500/20 text-green-600 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRejectAiGroup?.(group.id);
+                    }}
+                    className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <p className="font-medium mb-1">{group.aiMetadata.clusteringMethod} clustering</p>
+                <p className="text-xs text-muted-foreground">{group.aiMetadata.reasoning}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
+        {!isAiSuggested && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
                 className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
                 onClick={(e) => e.stopPropagation()}
               >
-                <MoreHorizontal className="w-3 h-3" />
+                <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onClick={() => onEditGroup?.(group.id)}>
-                Edit Group
+                <Eye className="w-3.5 h-3.5 mr-2" />
+                View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateGroup?.()}>
-                Add Child Group
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-destructive"
-                onClick={() => onDeleteGroup?.(group.id)}
-                disabled={group.isDefault}
-              >
-                Delete Group
-              </DropdownMenuItem>
+              {group.source !== 'system' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="text-destructive"
+                    onClick={() => onDeleteGroup?.(group.id)}
+                  >
+                    Delete Group
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-
-        {isExpanded && hasChildren && (
-          <div>
-            {children.map(child => renderTreeItem(child, depth + 1))}
-          </div>
         )}
       </div>
     );
   };
 
-  const renderCategory = (
-    id: string, 
-    label: string, 
-    categoryGroups: AssetGroup[],
-    icon: React.ReactNode
+  const renderSection = (
+    id: string,
+    title: string,
+    icon: React.ReactNode,
+    sectionGroups: AssetGroup[],
+    options?: { isAiSection?: boolean; badge?: React.ReactNode }
   ) => {
-    const isExpanded = expandedNodes.has(id);
-    const topLevelGroups = categoryGroups.filter(g => !g.parentId);
+    const isExpanded = expandedSections.has(id);
+    const sectionAssetCount = sectionGroups.reduce((sum, g) => sum + g.assetCount, 0);
+
+    if (sectionGroups.length === 0 && !options?.isAiSection) return null;
 
     return (
-      <div key={id}>
-        <div
+      <div key={id} className="mb-3">
+        <button
+          onClick={() => toggleSection(id)}
           className={cn(
-            'flex items-center gap-2 px-2 py-2 text-sm font-medium cursor-pointer',
-            'text-foreground hover:bg-secondary rounded transition-colors'
+            'flex items-center gap-2 w-full px-2 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors',
+            'text-muted-foreground/80 hover:bg-secondary hover:text-foreground'
           )}
-          onClick={() => toggleNode(id)}
         >
-          <button className="p-0.5">
-            {isExpanded ? (
-              <ChevronDown className="w-3 h-3" />
-            ) : (
-              <ChevronRight className="w-3 h-3" />
-            )}
-          </button>
+          {isExpanded ? (
+            <ChevronDown className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5" />
+          )}
           {icon}
-          <span className="flex-1">{label}</span>
-          <span className="text-xs text-muted-foreground">
-            {categoryGroups.reduce((sum, g) => sum + g.assetCount, 0)}
+          <span className="flex-1 text-left">{title}</span>
+          {options?.badge}
+          <span className="text-[10px] font-normal text-muted-foreground/60 tabular-nums">
+            {sectionGroups.length} / {sectionAssetCount}
           </span>
-        </div>
+        </button>
 
         {isExpanded && (
-          <div className="ml-2">
-            {topLevelGroups.map(group => renderTreeItem(group, 0))}
+          <div className="mt-1 ml-2 space-y-1">
+            {sectionGroups.length === 0 ? (
+              <p className="text-xs text-muted-foreground/60 px-3 py-2 italic">
+                No suggestions at this time
+              </p>
+            ) : (
+              sectionGroups.map(group => renderGroupItem(group, options?.isAiSection))
+            )}
           </div>
         )}
       </div>
@@ -242,48 +261,62 @@ export function GroupTreeNavigation({
       <div className="p-3 border-b border-border">
         <input
           type="text"
-          placeholder="Filter by Group Name"
+          placeholder="Filter groups..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-3 py-1.5 text-sm bg-input border border-border rounded focus:outline-none focus:ring-1 focus:ring-ring"
+          className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring/30"
         />
       </div>
 
       {/* Tree */}
-      <div className="flex-1 overflow-y-auto ndr-scrollbar p-2">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {/* All Assets */}
         <div
           className={cn(
-            'flex items-center gap-2 px-2 py-2 text-sm font-medium cursor-pointer rounded transition-colors mb-2',
+            'flex items-center gap-2 px-3 py-2.5 text-sm font-medium cursor-pointer rounded-md transition-colors',
             selectedGroupId === null 
-              ? 'bg-primary/20 text-primary' 
+              ? 'bg-primary/15 text-primary border border-primary/30' 
               : 'text-foreground hover:bg-secondary'
           )}
           onClick={() => onSelectGroup(null)}
         >
           <Server className="w-4 h-4" />
           <span className="flex-1">All Assets</span>
-          <span className="text-xs text-muted-foreground">
-            {groups.reduce((sum, g) => sum + g.assetCount, 0)}
-          </span>
+          <span className="text-xs text-muted-foreground tabular-nums">{totalAssets}</span>
         </div>
 
-        <div className="h-px bg-border my-2" />
+        <div className="h-px bg-border my-3" />
 
-        {/* Inside Assets */}
-        {renderCategory(
-          'cat-inside',
-          'Inside Assets',
-          insideGroups,
-          <Server className="w-4 h-4 text-internal" />
+        {/* System Groups */}
+        {renderSection(
+          'system',
+          'System Groups',
+          <Cpu className="w-3.5 h-3.5" />,
+          systemGroups
         )}
 
-        {/* Outside Assets */}
-        {renderCategory(
-          'cat-outside',
-          'Outside Assets',
-          outsideGroups,
-          <Globe className="w-4 h-4 text-external" />
+        {/* User Groups */}
+        {renderSection(
+          'user',
+          'Custom Groups',
+          <Folder className="w-3.5 h-3.5" />,
+          userGroups
+        )}
+
+        {/* AI-Suggested Groups */}
+        {renderSection(
+          'ai',
+          'AI Suggestions',
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />,
+          aiSuggestedGroups,
+          { 
+            isAiSection: true,
+            badge: aiSuggestedGroups.length > 0 && (
+              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-600 border-0">
+                {aiSuggestedGroups.length} new
+              </Badge>
+            )
+          }
         )}
       </div>
 
@@ -291,23 +324,23 @@ export function GroupTreeNavigation({
       <div className="p-3 border-t border-border space-y-2">
         <button
           onClick={onCreateGroup}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded transition-colors"
+          className="flex items-center justify-center gap-2 w-full px-3 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add Group
+          Create Group
         </button>
         <div className="flex gap-2">
-          <button className="flex-1 px-3 py-1.5 text-xs border border-border rounded hover:bg-secondary transition-colors">
-            Import All
+          <button className="flex-1 px-3 py-1.5 text-xs text-muted-foreground border border-border rounded-md hover:bg-secondary transition-colors">
+            Import
           </button>
-          <button className="flex-1 px-3 py-1.5 text-xs border border-border rounded hover:bg-secondary transition-colors">
-            Export All
+          <button className="flex-1 px-3 py-1.5 text-xs text-muted-foreground border border-border rounded-md hover:bg-secondary transition-colors">
+            Export
           </button>
         </div>
         <a
           href="/host-groups-import-sample.csv"
           download
-          className="block text-xs text-primary hover:underline"
+          className="block text-center text-xs text-primary hover:underline"
         >
           Download sample CSV
         </a>
