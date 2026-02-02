@@ -3,9 +3,6 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScoreBadge } from "./ScoreBadge";
-import { NewAssetsWidget } from "./NewAssetsWidget";
-import { StaleAssetsWidget } from "./StaleAssetsWidget";
-import { ActiveAssetsWidget } from "./ActiveAssetsWidget";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -18,6 +15,9 @@ import {
   Server,
   Settings,
   Shield,
+  Sparkles,
+  FolderTree,
+  Clock,
 } from "lucide-react";
 import { deviceRoles, protocolStats, headerStats, getDeviceIcon } from "@/data/asset-dashboard";
 import { useRiskSettings } from "@/state/riskSettings";
@@ -91,19 +91,34 @@ export const AssetDashboardPanel = ({
               </Button>
             </div>
 
-            <div className="grid grid-cols-7 gap-3">
-              {headerStats.map((stat, index) => (
-                <div key={index} className="bg-secondary/30 border border-border/50 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
-                  <p className="text-primary text-lg font-bold font-mono leading-none">
-                    {stat.value}{" "}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {stat.label.toLowerCase().replace(/s$/, "").replace("device", "device")}
-                      {stat.value !== 1 ? "s" : ""}
-                    </span>
-                  </p>
-                </div>
-              ))}
+            <div className="grid grid-cols-4 gap-3">
+              {headerStats.map((stat, index) => {
+                const getIcon = () => {
+                  if (stat.label === "New Assets") return <Sparkles className="h-4 w-4 text-emerald-500" />;
+                  if (stat.label === "Active Assets") return <Activity className="h-4 w-4 text-primary" />;
+                  if (stat.label === "Asset Groups") return <FolderTree className="h-4 w-4 text-primary" />;
+                  if (stat.label === "Stale Assets") return <Clock className="h-4 w-4 text-amber-500" />;
+                  return null;
+                };
+                const getValueColor = () => {
+                  if (stat.label === "New Assets") return "text-emerald-500";
+                  if (stat.label === "Stale Assets") return "text-amber-500";
+                  return "text-primary";
+                };
+                return (
+                  <div key={index} className="bg-secondary/30 border border-border/50 rounded-lg p-3 flex items-center gap-3">
+                    <div className="p-2 bg-secondary/50 rounded-lg">
+                      {getIcon()}
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">{stat.label}</p>
+                      <p className={cn("text-xl font-bold font-mono leading-none", getValueColor())}>
+                        {stat.value}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -147,12 +162,6 @@ export const AssetDashboardPanel = ({
               </div>
             </div>
 
-            {/* Lifecycle Widgets Row */}
-            <div className="grid grid-cols-3 gap-4">
-              <NewAssetsWidget assets={assets} onSelectAsset={onSelectAsset} />
-              <ActiveAssetsWidget assets={assets} onSelectAsset={onSelectAsset} />
-              <StaleAssetsWidget assets={assets} onSelectAsset={onSelectAsset} />
-            </div>
 
             <div className="grid grid-cols-12 gap-6">
               <div className="col-span-7">
