@@ -127,7 +127,10 @@ export function GroupTreeNavigation({
       if (g.id === 'grp-internal' || g.id === 'grp-external') return false;
       if (g.source === 'ai_suggested' && g.status === 'pending_review') return false;
       
-      const externalIds = ['grp-internet-facing', 'grp-guest', 'grp-scanners', 'grp-third-party', 'grp-saas'];
+      // System groups explicitly under external
+      if (g.parentId === 'grp-external') return true;
+      
+      const externalIds = ['grp-internet-facing', 'grp-guest', 'grp-scanners', 'grp-third-party', 'grp-saas', 'grp-known-threat-ips', 'grp-tor-exit-nodes'];
       if (externalIds.includes(g.id)) return true;
       
       // Check rules for external/guest locality

@@ -19,3 +19,32 @@ export const getStaleInfo = (lastSeen: string, staleAfterDays: number) => {
   }
   return { isStale: days > staleAfterDays, staleDays: days };
 };
+
+export type LifecycleStatus = 'new' | 'active' | 'stale';
+
+export const getLifecycleStatus = (
+  firstSeen: string,
+  lastSeen: string,
+  newThresholdDays = 7,
+  staleThresholdDays = 30
+): LifecycleStatus => {
+  const firstSeenDays = getDaysSince(firstSeen);
+  const lastSeenDays = getDaysSince(lastSeen);
+  
+  // If we can't parse dates, default to active
+  if (firstSeenDays === null || lastSeenDays === null) {
+    return 'active';
+  }
+  
+  // Stale: not seen for more than staleThresholdDays
+  if (lastSeenDays > staleThresholdDays) {
+    return 'stale';
+  }
+  
+  // New: first seen within newThresholdDays
+  if (firstSeenDays <= newThresholdDays) {
+    return 'new';
+  }
+  
+  return 'active';
+};

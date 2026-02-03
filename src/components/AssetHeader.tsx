@@ -15,7 +15,11 @@ import {
   Flag,
   Eye,
   Copy,
-  Layers
+  Layers,
+  Play,
+  Pause,
+  Archive,
+  RotateCcw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -24,6 +28,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -31,6 +38,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { getLifecycleStatus } from "@/lib/asset-lifecycle";
 
 interface AssetHeaderProps {
   asset: Asset;
@@ -47,8 +55,7 @@ const tabs = [
   { id: 'topology', label: 'Topology' },
   { id: 'qos', label: 'QoS' },
   { id: 'protocol', label: 'L7 Protocols' },
-  { id: 'events', label: 'Events', count: 27 },
-  { id: 'timeline', label: 'Timeline' },
+  { id: 'activity', label: 'Activity', count: 27 },
   { id: 'comments', label: 'Comments', count: 2 },
 ];
 
@@ -256,6 +263,45 @@ export const AssetHeader = ({ asset, activeTab, onTabChange }: AssetHeaderProps)
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {/* Lifecycle Actions */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-2 cursor-pointer">
+                  <RotateCcw className="h-4 w-4" />
+                  Change Lifecycle Status
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-48">
+                  {(() => {
+                    const status = getLifecycleStatus(asset.firstSeen, asset.lastSeen);
+                    return (
+                      <>
+                        {status !== 'active' && (
+                          <DropdownMenuItem className="gap-2 cursor-pointer">
+                            <Play className="h-4 w-4 text-success" />
+                            Mark as Active
+                          </DropdownMenuItem>
+                        )}
+                        {status !== 'stale' && (
+                          <DropdownMenuItem className="gap-2 cursor-pointer">
+                            <Pause className="h-4 w-4 text-threat-medium" />
+                            Mark as Stale
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem className="gap-2 cursor-pointer">
+                          <Archive className="h-4 w-4 text-muted-foreground" />
+                          Archive Asset
+                        </DropdownMenuItem>
+                        {status === 'stale' && (
+                          <DropdownMenuItem className="gap-2 cursor-pointer">
+                            <RotateCcw className="h-4 w-4 text-primary" />
+                            Reactivate
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    );
+                  })()}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
               <DropdownMenuItem className="gap-2 cursor-pointer">
                 <MessageSquare className="h-4 w-4" />
                 Add Comment
