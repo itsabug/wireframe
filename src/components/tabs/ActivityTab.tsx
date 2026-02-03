@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, AlertTriangle, AlertCircle, Info, Network, Shield, User, Users, ArrowRight, Clock, List } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MitreAttackCard } from "../MitreAttackCard";
+
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ActivityTabProps {
@@ -108,7 +108,7 @@ export const ActivityTab = ({ events, mitreCategories, timelineEvents, changeHis
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -149,26 +149,7 @@ export const ActivityTab = ({ events, mitreCategories, timelineEvents, changeHis
             <p className="text-2xl font-bold font-mono text-threat-low">{lowCount}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Identity Changes</p>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">IP, MAC, hostname changes via DHCP/ARP</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <p className="text-2xl font-bold font-mono">{changeHistory.length}</p>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* MITRE ATT&CK Card */}
-      <MitreAttackCard categories={mitreCategories} totalEvents={events.length} />
 
       {/* Main Content with View Toggle */}
       <Card>
