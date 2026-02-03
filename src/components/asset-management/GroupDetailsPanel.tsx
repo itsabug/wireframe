@@ -489,10 +489,10 @@ export function GroupDetailsPanel({
                       value={rule.field}
                       onValueChange={(v) => updateRule(index, { field: v })}
                     >
-                      <SelectTrigger className="w-32 bg-input">
+                      <SelectTrigger className="w-44 bg-input">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="min-w-[180px]">
                         <SelectItem value="src_ip">Source IP (CIDR)</SelectItem>
                         <SelectItem value="dst_ip">Destination IP (CIDR)</SelectItem>
                         <SelectItem value="host_name">Asset Hostname</SelectItem>
@@ -513,10 +513,10 @@ export function GroupDetailsPanel({
                         updateRule(index, { operator: v as DynamicGroupRule['operator'] })
                       }
                     >
-                      <SelectTrigger className="w-28 bg-input">
+                      <SelectTrigger className="w-36 bg-input">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="min-w-[160px]">
                         <SelectItem value="equals">equals</SelectItem>
                         <SelectItem value="not_equals">not equals</SelectItem>
                         <SelectItem value="contains">contains</SelectItem>
@@ -626,17 +626,38 @@ export function GroupDetailsPanel({
                         <Input
                           value={rule.value as string}
                           onChange={(e) => updateRule(index, { value: e.target.value })}
-                          placeholder="Value"
+                          placeholder={rule.operator === 'matches_regex' ? 'e.g., ^web-\\d+$' : 'Value'}
                           className="bg-input"
                         />
-                        {rule.operator === 'matches_regex' && (
-                          <p className="text-[11px] text-muted-foreground">
-                            Regex uses patterns: <span className="font-mono">^</span> = start,
-                            <span className="font-mono">$</span> = end,
-                            <span className="font-mono">\\d+</span> = digits. Example{' '}
-                            <span className="font-mono">^web-\\d+$</span> matches
-                            <span className="font-mono">web-01</span> or <span className="font-mono">web-123</span>.
-                          </p>
+                        {(rule.operator === 'matches_regex' || 
+                          rule.operator === 'contains' || 
+                          rule.operator === 'starts_with' || 
+                          rule.operator === 'ends_with') && (
+                          <div className="p-2 bg-muted/50 rounded text-[11px] text-muted-foreground space-y-1">
+                            {rule.operator === 'matches_regex' ? (
+                              <>
+                                <p className="font-medium text-foreground">Regex Pattern Help:</p>
+                                <ul className="list-disc list-inside space-y-0.5 ml-1">
+                                  <li><code className="font-mono bg-secondary px-1 rounded">^</code> matches start of text</li>
+                                  <li><code className="font-mono bg-secondary px-1 rounded">$</code> matches end of text</li>
+                                  <li><code className="font-mono bg-secondary px-1 rounded">\d+</code> matches one or more digits</li>
+                                  <li><code className="font-mono bg-secondary px-1 rounded">.*</code> matches any characters</li>
+                                  <li><code className="font-mono bg-secondary px-1 rounded">\.</code> matches a literal dot</li>
+                                </ul>
+                                <p className="mt-1.5"><span className="font-medium">Examples:</span></p>
+                                <ul className="list-disc list-inside space-y-0.5 ml-1">
+                                  <li><code className="font-mono bg-secondary px-1 rounded">^web-\d+$</code> → matches <code className="font-mono">web-01</code>, <code className="font-mono">web-123</code></li>
+                                  <li><code className="font-mono bg-secondary px-1 rounded">^10\.0\..*</code> → matches any IP starting with <code className="font-mono">10.0.</code></li>
+                                  <li><code className="font-mono bg-secondary px-1 rounded">-prod$</code> → matches hostnames ending in <code className="font-mono">-prod</code></li>
+                                </ul>
+                              </>
+                            ) : (
+                              <>
+                                <p>This field supports pattern matching. Enter a substring to match against the asset's {rule.field.replace(/_/g, ' ')}.</p>
+                                <p className="mt-1"><span className="font-medium">Tip:</span> For more advanced matching, use the <code className="font-mono bg-secondary px-1 rounded">matches regex</code> operator.</p>
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
                     )}

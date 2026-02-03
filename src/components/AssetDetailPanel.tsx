@@ -8,8 +8,7 @@ import { ApplicationTab } from "./tabs/ApplicationTab";
 import { NetworkAnalyticsTab } from "./tabs/NetworkAnalyticsTab";
 import { DependenciesTab } from "./tabs/DependenciesTab";
 import { QoSTab } from "./tabs/QoSTab";
-import { EventsTab } from "./tabs/EventsTab";
-import { TimelineTab } from "./tabs/TimelineTab";
+import { ActivityTab } from "./tabs/ActivityTab";
 import { CommentsTab } from "./CommentsTab";
 import { ProtocolActivityTab } from "./tabs/ProtocolActivityTab";
 import { TopologyTab } from "./tabs/TopologyTab";
@@ -86,10 +85,8 @@ export const AssetDetailPanel = ({
         return <DependenciesTab asset={asset} flows={flows} peers={peers} />;
       case 'qos':
         return <QoSTab qosData={qosData} />;
-      case 'events':
-        return <EventsTab events={events} mitreCategories={mitreCategories} />;
-      case 'timeline':
-        return <TimelineTab timelineEvents={timelineEvents} changeHistory={changeHistory} />;
+      case 'activity':
+        return <ActivityTab events={events} mitreCategories={mitreCategories} timelineEvents={timelineEvents} changeHistory={changeHistory} />;
       case 'topology':
         return <TopologyTab asset={asset} peers={peers} flows={flows} />;
       case 'comments':
