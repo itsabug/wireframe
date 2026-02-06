@@ -1,14 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ChevronRight, HelpCircle, UserPlus, Tag, Search, ShieldOff } from "lucide-react";
+import { AlertTriangle, ChevronRight, UserPlus, Tag, Search, ShieldOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { RogueAssetEntry } from "@/data/dashboard-mock-data";
+import { WidgetHeader } from "./ScopeChip";
+import { WIDGET_DEFINITIONS, RogueAssetEntry, DEFAULT_TIME_WINDOW } from "@/data/unified-dashboard-data";
 
 interface RogueAssetsCardProps {
   totalRogues: number;
   assets: RogueAssetEntry[];
+  timeWindow?: string;
   onViewAll?: () => void;
   onAction?: (assetIp: string, action: RogueAssetEntry['suggestedAction']) => void;
 }
@@ -40,44 +43,36 @@ const getReasonBadgeColor = (reason: RogueAssetEntry['reason']) => {
   }
 };
 
-export const RogueAssetsCard = ({ totalRogues, assets, onViewAll, onAction }: RogueAssetsCardProps) => {
+export const RogueAssetsCard = ({ 
+  totalRogues, 
+  assets, 
+  timeWindow = DEFAULT_TIME_WINDOW,
+  onViewAll, 
+  onAction 
+}: RogueAssetsCardProps) => {
   const topAssets = assets.slice(0, 5);
+  const def = WIDGET_DEFINITIONS.ROGUE_ASSETS;
 
   return (
     <Card className="bg-card border-border/50">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Rogue Assets</CardTitle>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className="text-muted-foreground hover:text-foreground">
-                  <HelpCircle className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs">
-                <div className="space-y-2 text-xs">
-                  <p className="font-semibold">What are Rogue Assets?</p>
-                  <p>Devices communicating on the network that are NOT in the managed asset inventory:</p>
-                  <ul className="list-disc pl-4 space-y-1">
-                    <li><strong>Unmanaged</strong>: Not in inventory</li>
-                    <li><strong>Unknown Vendor</strong>: Unrecognized MAC prefix</li>
-                    <li><strong>Shadow IT</strong>: Unauthorized personal devices</li>
-                    <li><strong>Unauthorized</strong>: In restricted zones</li>
-                  </ul>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          {onViewAll && (
-            <button 
-              onClick={onViewAll}
-              className="text-xs text-primary hover:underline flex items-center gap-1"
-            >
-              View all <ChevronRight className="h-3 w-3" />
-            </button>
-          )}
-        </div>
+        <WidgetHeader
+          title={def.title}
+          definition={def.definition}
+          scope={def.scope}
+          timeWindow={timeWindow}
+          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+          action={
+            onViewAll && (
+              <button 
+                onClick={onViewAll}
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                View all <ChevronRight className="h-3 w-3" />
+              </button>
+            )
+          }
+        />
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4 mb-3">
@@ -112,19 +107,21 @@ export const RogueAssetsCard = ({ totalRogues, assets, onViewAll, onAction }: Ro
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                       {asset.hostname && <span className="font-mono">{asset.ip}</span>}
                       <span>•</span>
-                      <span>{asset.connectionCount} connections</span>
+                      <span>{asset.connectionCount} conns</span>
                       <span>•</span>
-                      <span>{asset.firstSeen}</span>
+                      <span>Last: {asset.lastSeen}</span>
                     </div>
                   </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button 
+                      <Button 
+                        variant="ghost"
+                        size="icon"
                         onClick={() => onAction?.(asset.ip, asset.suggestedAction)}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-primary/10 text-primary transition-all"
+                        className="opacity-0 group-hover:opacity-100 h-7 w-7 text-primary transition-all"
                       >
                         <ActionIcon className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
                       <span className="text-xs">{getActionLabel(asset.suggestedAction)}</span>
@@ -133,6 +130,11 @@ export const RogueAssetsCard = ({ totalRogues, assets, onViewAll, onAction }: Ro
                 </div>
               );
             })}
+            {assets.length === 0 && (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                No rogue assets detected
+              </div>
+            )}
           </div>
         </ScrollArea>
       </CardContent>

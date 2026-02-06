@@ -15,3 +15,4 @@ export { RogueAssetsCard } from './RogueAssetsCard';
 export { MitreAttackSummaryCard } from './MitreAttackSummaryCard';
 export { TrafficSummaryCard } from './TrafficSummaryCard';
 export { DiscoveryCoverageCard } from './DiscoveryCoverageCard';
+export { ScopeChip, DefinitionTooltip, WidgetHeader } from './ScopeChip';

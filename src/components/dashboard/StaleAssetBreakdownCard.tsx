@@ -1,13 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 import { Clock, TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface StaleBreakdown {
-  locality: string;
-  count: number;
-}
+import { WidgetHeader } from "./ScopeChip";
+import { WIDGET_DEFINITIONS, StaleBreakdown } from "@/data/unified-dashboard-data";
 
 interface TrendDataPoint {
   date: string;
@@ -28,23 +25,27 @@ export const StaleAssetBreakdownCard = ({
   trend,
 }: StaleAssetBreakdownCardProps) => {
   const isPositive = trend <= 0; // For stale, decreasing is positive
+  const def = WIDGET_DEFINITIONS.STALE_ASSETS;
 
   return (
     <Card className="bg-card border-border/50">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-amber-500" />
-            <CardTitle className="text-sm font-medium text-muted-foreground">Stale Assets Breakdown</CardTitle>
-          </div>
-          <Badge variant="outline" className={cn(
-            "text-[10px] gap-1",
-            isPositive ? "text-emerald-500 border-emerald-500/30" : "text-destructive border-destructive/30"
-          )}>
-            {isPositive ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
-            {trend > 0 ? "+" : ""}{trend}%
-          </Badge>
-        </div>
+        <WidgetHeader
+          title={def.title}
+          definition={def.definition}
+          scope={def.scope}
+          computation={def.computation}
+          icon={<Clock className="h-4 w-4 text-amber-500" />}
+          action={
+            <Badge variant="outline" className={cn(
+              "text-[10px] gap-1",
+              isPositive ? "text-emerald-500 border-emerald-500/30" : "text-destructive border-destructive/30"
+            )}>
+              {isPositive ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+              {trend > 0 ? "+" : ""}{trend}%
+            </Badge>
+          }
+        />
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-4">

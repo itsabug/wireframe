@@ -504,9 +504,19 @@ export function TagManagementPanel({
         {/* Tag Catalog Tab */}
         <TabsContent value="catalog" className="space-y-4 mt-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Define tags used for whitelisting, policy scoping, and asset categorization.
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                Define tags used for whitelisting, policy scoping, and asset categorization.
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm">
+                  Import CSV
+                </Button>
+                <Button variant="outline" size="sm">
+                  Export CSV
+                </Button>
+              </div>
+            </div>
             <Button onClick={handleStartCreate}>
               <Plus className="w-4 h-4 mr-2" />
               Create Tag
@@ -522,7 +532,7 @@ export function TagManagementPanel({
                 </Button>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Tag Name *</label>
                   <Input
@@ -531,6 +541,21 @@ export function TagManagementPanel({
                     placeholder="e.g., pci, finance, internet-facing"
                     className="bg-input"
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Category</label>
+                  <Select defaultValue="uncategorized">
+                    <SelectTrigger className="bg-input">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="uncategorized">Uncategorized</SelectItem>
+                      <SelectItem value="compliance">Compliance</SelectItem>
+                      <SelectItem value="environment">Environment</SelectItem>
+                      <SelectItem value="business_unit">Business Unit</SelectItem>
+                      <SelectItem value="sensitivity">Sensitivity</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Description</label>
@@ -559,6 +584,8 @@ export function TagManagementPanel({
               <TableHeader>
                 <TableRow>
                   <TableHead>Tag Name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Usage Count</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -566,12 +593,12 @@ export function TagManagementPanel({
               <TableBody>
                 {catalog.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       No tags configured.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  catalog.map((tag) => (
+                  catalog.map((tag, index) => (
                     <TableRow key={tag.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -581,7 +608,16 @@ export function TagManagementPanel({
                           <span className="font-medium text-foreground">{tag.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{tag.description || '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {tag.category || 'Uncategorized'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-mono text-sm">{Math.floor(Math.random() * 50) + 1}</span>
+                        <span className="text-xs text-muted-foreground ml-1">assets</span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{tag.description || '—'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => onEditTag?.(tag)}>
