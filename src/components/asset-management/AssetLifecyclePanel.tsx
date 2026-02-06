@@ -1,12 +1,77 @@
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Eye, 
+  TrendingUp, 
+  Calendar,
+  ChevronRight,
+  Info
+} from 'lucide-react';
 import { updateLifecycleSettings, useLifecycleSettings } from '@/state/lifecycleSettings';
+import { ASSET_METRICS } from '@/data/unified-dashboard-data';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
+// Simulated data for lifecycle projection
+const simulateLifecycleChanges = (staleAfterDays: number, archiveAfterDays: number, projectionDays: number) => {
+  // This would normally come from actual asset data
+  const mockAssets = [
+    { id: 'asset-001', name: 'web-prod-01', lastSeen: 28, currentStatus: 'active' },
+    { id: 'asset-002', name: 'db-backup-02', lastSeen: 45, currentStatus: 'stale' },
+    { id: 'asset-003', name: 'dev-api-01', lastSeen: 15, currentStatus: 'active' },
+    { id: 'asset-004', name: 'legacy-srv-03', lastSeen: 85, currentStatus: 'stale' },
+    { id: 'asset-005', name: 'monitoring-01', lastSeen: 5, currentStatus: 'active' },
+  ];
+
+  const changes: Array<{
+    assetId: string;
+    assetName: string;
+    currentStatus: string;
+    newStatus: string;
+    daysUntilChange: number;
+    reason: string;
+  }> = [];
+
+  mockAssets.forEach(asset => {
+    const daysUntilStale = staleAfterDays - asset.lastSeen;
+    const daysUntilArchive = archiveAfterDays - asset.lastSeen;
+
+    if (asset.currentStatus === 'active' && daysUntilStale > 0 && daysUntilStale <= projectionDays) {
+      changes.push({
+        assetId: asset.id,
+        assetName: asset.name,
+        currentStatus: 'Active',
+        newStatus: 'Stale',
+        daysUntilChange: daysUntilStale,
+        reason: `No activity for ${staleAfterDays} days`,
+      });
+    }
+
+    if (daysUntilArchive > 0 && daysUntilArchive <= projectionDays) {
+      changes.push({
+        assetId: asset.id,
+        assetName: asset.name,
+        currentStatus: asset.currentStatus === 'stale' ? 'Stale' : 'Active',
+        newStatus: 'Archived',
+        daysUntilChange: daysUntilArchive,
+        reason: `No activity for ${archiveAfterDays} days`,
+      });
+    }
+  });
+
+  return changes.sort((a, b) => a.daysUntilChange - b.daysUntilChange);
+};
 
 export function AssetLifecyclePanel() {
   const { staleAfterDays, newAssetHighlightDays } = useLifecycleSettings();
+  const [archiveAfterDays, setArchiveAfterDays] = useState(90);
+  const [reviewCadenceDays, setReviewCadenceDays] = useState(180);
+  const [projectionDays, setProjectionDays] = useState(14);
+  const [showSimulation, setShowSimulation] = useState(false);
 
   const handleStaleDaysChange = (value: string) => {
     const parsed = Number(value);
@@ -20,8 +85,94 @@ export function AssetLifecyclePanel() {
     updateLifecycleSettings({ newAssetHighlightDays: Math.max(1, Math.floor(parsed)) });
   };
 
+  // Lifecycle simulation
+  const projectedChanges = useMemo(() => 
+    simulateLifecycleChanges(staleAfterDays, archiveAfterDays, projectionDays),
+    [staleAfterDays, archiveAfterDays, projectionDays]
+  );
+
+  const staleCount = projectedChanges.filter(c => c.newStatus === 'Stale').length;
+  const archiveCount = projectedChanges.filter(c => c.newStatus === 'Archived').length;
+
   return (
     <div className="space-y-6">
+      {/* Summary Card */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Lifecycle Projection
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Preview next</Label>
+              <Input
+                type="number"
+                min={1}
+                max={90}
+                value={projectionDays}
+                onChange={(e) => setProjectionDays(Math.max(1, Number(e.target.value) || 14))}
+                className="w-16 h-7 text-xs"
+              />
+              <span className="text-xs text-muted-foreground">days</span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-3 rounded-lg bg-background/80">
+              <p className="text-2xl font-bold font-mono">{ASSET_METRICS.TOTAL_MANAGED_ASSETS}</p>
+              <p className="text-xs text-muted-foreground">Total assets</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-amber-500/10">
+              <p className="text-2xl font-bold font-mono text-amber-600">{staleCount}</p>
+              <p className="text-xs text-muted-foreground">Will become stale</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-muted">
+              <p className="text-2xl font-bold font-mono text-muted-foreground">{archiveCount}</p>
+              <p className="text-xs text-muted-foreground">Will be archived</p>
+            </div>
+          </div>
+
+          {projectedChanges.length > 0 && (
+            <div className="mt-4">
+              <button
+                onClick={() => setShowSimulation(!showSimulation)}
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Eye className="h-3 w-3" />
+                {showSimulation ? 'Hide' : 'View'} affected assets
+                <ChevronRight className={`h-3 w-3 transition-transform ${showSimulation ? 'rotate-90' : ''}`} />
+              </button>
+
+              {showSimulation && (
+                <div className="mt-3 space-y-2 max-h-[200px] overflow-auto">
+                  {projectedChanges.map((change, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 rounded bg-secondary/30 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono">{change.assetName}</span>
+                        <Badge variant="outline" className="text-[9px]">{change.currentStatus}</Badge>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                        <Badge 
+                          variant="outline" 
+                          className={`text-[9px] ${
+                            change.newStatus === 'Stale' ? 'text-amber-600 border-amber-500/30' :
+                            change.newStatus === 'Archived' ? 'text-muted-foreground' : ''
+                          }`}
+                        >
+                          {change.newStatus}
+                        </Badge>
+                      </div>
+                      <span className="text-muted-foreground">in {change.daysUntilChange}d</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="border border-border rounded-lg p-5 bg-card space-y-4">
         <div>
           <h3 className="text-lg font-semibold text-foreground">Discovery & Staleness</h3>
@@ -31,7 +182,17 @@ export function AssetLifecyclePanel() {
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Mark asset as stale after (days inactive)</Label>
+            <div className="flex items-center gap-2">
+              <Label>Mark asset as stale after (days inactive)</Label>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-xs">Assets with no network activity for this many days will be marked as "Stale" and flagged for review.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Input
               type="number"
               min={1}
@@ -41,8 +202,24 @@ export function AssetLifecyclePanel() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Auto-archive after (days inactive)</Label>
-            <Input type="number" min={1} defaultValue={90} className="bg-input" />
+            <div className="flex items-center gap-2">
+              <Label>Auto-archive after (days inactive)</Label>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-xs">Assets inactive for this many days will be archived. Archived assets are hidden from default views but retained for compliance.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input 
+              type="number" 
+              min={1} 
+              value={archiveAfterDays}
+              onChange={(e) => setArchiveAfterDays(Math.max(1, Number(e.target.value) || 90))}
+              className="bg-input" 
+            />
           </div>
           <div className="space-y-2">
             <Label>New asset highlight window (days)</Label>
@@ -56,7 +233,13 @@ export function AssetLifecyclePanel() {
           </div>
           <div className="space-y-2">
             <Label>Ownership review cadence (days)</Label>
-            <Input type="number" min={1} defaultValue={180} className="bg-input" />
+            <Input 
+              type="number" 
+              min={1} 
+              value={reviewCadenceDays}
+              onChange={(e) => setReviewCadenceDays(Math.max(1, Number(e.target.value) || 180))}
+              className="bg-input" 
+            />
           </div>
         </div>
       </div>
@@ -72,14 +255,14 @@ export function AssetLifecyclePanel() {
           <div className="flex items-center justify-between">
             <div>
               <Label className="font-normal">Auto-tag new assets</Label>
-              <p className="text-xs text-muted-foreground">Apply a “new-asset” tag for visibility.</p>
+              <p className="text-xs text-muted-foreground">Apply a "new-asset" tag for visibility.</p>
             </div>
             <Switch defaultChecked />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <Label className="font-normal">Auto-tag stale assets</Label>
-              <p className="text-xs text-muted-foreground">Apply a “stale-asset” tag when inactive.</p>
+              <p className="text-xs text-muted-foreground">Apply a "stale-asset" tag when inactive.</p>
             </div>
             <Switch defaultChecked />
           </div>
@@ -92,6 +275,44 @@ export function AssetLifecyclePanel() {
             </div>
             <Switch />
           </div>
+        </div>
+      </div>
+
+      {/* Audit Log Section */}
+      <div className="border border-border rounded-lg p-5 bg-card space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Lifecycle Audit Log</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Recent lifecycle state changes across your asset inventory.
+            </p>
+          </div>
+          <Button variant="outline" size="sm">
+            <Calendar className="h-4 w-4 mr-2" />
+            View Full Log
+          </Button>
+        </div>
+        
+        <div className="space-y-2">
+          {[
+            { asset: 'legacy-srv-03', from: 'Stale', to: 'Archived', when: '2 hours ago', by: 'System' },
+            { asset: 'db-backup-02', from: 'Active', to: 'Stale', when: '1 day ago', by: 'System' },
+            { asset: 'web-prod-01', from: 'Stale', to: 'Active', when: '3 days ago', by: 'admin@example.com' },
+          ].map((entry, index) => (
+            <div key={index} className="flex items-center justify-between p-2 rounded bg-secondary/30 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-mono">{entry.asset}</span>
+                <Badge variant="outline" className="text-[9px]">{entry.from}</Badge>
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                <Badge variant="outline" className="text-[9px]">{entry.to}</Badge>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span>{entry.when}</span>
+                <span>•</span>
+                <span>{entry.by}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -122,124 +343,11 @@ export function AssetLifecyclePanel() {
               <Input type="number" min={1} defaultValue={30} className="bg-input" />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Match criteria</Label>
-            <div className="grid gap-2 md:grid-cols-2">
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input type="checkbox" defaultChecked />
-                MAC address
-              </label>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input type="checkbox" defaultChecked />
-                Hostname + IP
-              </label>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input type="checkbox" />
-                Certificate fingerprint
-              </label>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input type="checkbox" />
-                DHCP client ID
-              </label>
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="font-normal">Require review for low-confidence merges</Label>
-              <p className="text-xs text-muted-foreground">
-                Queue merges below the threshold for approval.
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
         </div>
       </div>
 
-      <div className="border border-border rounded-lg p-5 bg-card space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">Notifications & SLAs</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Route lifecycle alerts and enforce response time objectives.
-          </p>
-        </div>
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Notify on new critical assets</Label>
-              <select className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" aria-label="Notify on new critical assets">
-                <option>Immediately</option>
-                <option>Hourly digest</option>
-                <option>Daily digest</option>
-                <option>Off</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Notify on stale critical assets</Label>
-              <select className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" aria-label="Notify on stale critical assets">
-                <option>Immediately</option>
-                <option>Hourly digest</option>
-                <option>Daily digest</option>
-                <option>Off</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Ownership attestation overdue</Label>
-              <Input type="number" min={1} defaultValue={14} className="bg-input" />
-            </div>
-            <div className="space-y-2">
-              <Label>Auto-escalate after (hours)</Label>
-              <Input type="number" min={1} defaultValue={48} className="bg-input" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Default notification channel</Label>
-            <select className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" aria-label="Default notification channel">
-              <option>Security Operations</option>
-              <option>IT Operations</option>
-              <option>Email only</option>
-              <option>Webhook</option>
-            </select>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="font-normal">Create tickets for SLA breaches</Label>
-              <p className="text-xs text-muted-foreground">
-                Open a case when lifecycle SLAs are missed.
-              </p>
-            </div>
-            <Switch />
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Button>Save Notification Settings</Button>
-        </div>
-      </div>
-
-      <div className="border border-border rounded-lg p-5 bg-card space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">Decommission Policy</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Define how long to retain asset history after decommissioning.
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Retention after decommission (days)</Label>
-            <Input type="number" min={1} defaultValue={365} className="bg-input" />
-          </div>
-          <div className="space-y-2">
-            <Label>Approval notes template</Label>
-            <Textarea
-              placeholder="Reason for decommission, approval reference, change ticket..."
-              className="bg-input min-h-[80px] resize-none"
-            />
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Button>Save Lifecycle Settings</Button>
-        </div>
+      <div className="flex justify-end">
+        <Button>Save Lifecycle Settings</Button>
       </div>
     </div>
   );

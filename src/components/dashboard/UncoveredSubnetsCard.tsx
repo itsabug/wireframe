@@ -1,16 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Network, AlertCircle, ArrowUpDown } from "lucide-react";
+import { Network, AlertCircle, ArrowUpDown, Wrench } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-
-interface UncoveredSubnet {
-  cidr: string;
-  assetCount: number;
-  firstSeen: string;
-  severity: "high" | "medium" | "low";
-}
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { WidgetHeader } from "./ScopeChip";
+import { UncoveredSubnet } from "@/data/unified-dashboard-data";
 
 interface UncoveredSubnetsCardProps {
   subnets: UncoveredSubnet[];
@@ -36,19 +32,22 @@ export const UncoveredSubnetsCard = ({ subnets }: UncoveredSubnetsCardProps) => 
   return (
     <Card className="bg-card border-border/50">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Network className="h-4 w-4 text-amber-500" />
-            <CardTitle className="text-sm font-medium text-muted-foreground">Uncovered Subnets</CardTitle>
-          </div>
-          <button
-            onClick={() => setSortBy(sortBy === "count" ? "severity" : "count")}
-            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowUpDown className="h-3 w-3" />
-            {sortBy === "count" ? "by count" : "by severity"}
-          </button>
-        </div>
+        <WidgetHeader
+          title="Uncovered Subnets"
+          definition="Network subnets with observed traffic but no locality or zone mapping configured."
+          scope="Network-wide"
+          computation="Detected via flow analysis from NDR sensors."
+          icon={<Network className="h-4 w-4 text-amber-500" />}
+          action={
+            <button
+              onClick={() => setSortBy(sortBy === "count" ? "severity" : "count")}
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowUpDown className="h-3 w-3" />
+              {sortBy === "count" ? "by count" : "by severity"}
+            </button>
+          }
+        />
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[160px]">
@@ -56,21 +55,37 @@ export const UncoveredSubnetsCard = ({ subnets }: UncoveredSubnetsCardProps) => 
             {sortedSubnets.map((subnet, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                className="flex items-center justify-between p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 transition-colors group"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <AlertCircle className={cn(
-                    "h-3.5 w-3.5",
+                    "h-3.5 w-3.5 flex-shrink-0",
                     subnet.severity === "high" ? "text-destructive" :
                     subnet.severity === "medium" ? "text-amber-500" : "text-blue-500"
                   )} />
-                  <span className="text-xs font-mono">{subnet.cidr}</span>
+                  <div className="min-w-0">
+                    <span className="text-xs font-mono">{subnet.cidr}</span>
+                    <p className="text-[10px] text-muted-foreground">
+                      Last seen: {subnet.lastSeen}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground">{subnet.assetCount} assets</span>
                   <Badge variant="outline" className={cn("text-[9px]", getSeverityColor(subnet.severity))}>
                     {subnet.severity}
                   </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-primary/10 text-primary transition-all">
+                        <Wrench className="h-3 w-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <p className="text-xs font-medium">Recommended action:</p>
+                      <p className="text-xs text-muted-foreground">{subnet.suggestedCollector}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             ))}

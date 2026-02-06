@@ -1,31 +1,42 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp } from "lucide-react";
-interface GroupRogue {
-  name: string;
-  rogueCount: number;
-  trend: number;
-}
+import { TrendingUp, AlertTriangle, ChevronRight } from "lucide-react";
+import { WidgetHeader } from "./ScopeChip";
+import { GroupRogue } from "@/data/unified-dashboard-data";
 
 interface TopGroupsByRoguesCardProps {
   groups: GroupRogue[];
   timeWindow: string;
+  onViewAll?: () => void;
 }
 
-export const TopGroupsByRoguesCard = ({ groups, timeWindow }: TopGroupsByRoguesCardProps) => {
+export const TopGroupsByRoguesCard = ({ groups, timeWindow, onViewAll }: TopGroupsByRoguesCardProps) => {
   const maxRogues = Math.max(...groups.map(g => g.rogueCount), 1);
 
   return (
     <Card className="bg-card border-border/50">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Top Groups by Rogues</CardTitle>
-          <Badge variant="secondary" className="text-[10px]">{timeWindow}</Badge>
-        </div>
+        <WidgetHeader
+          title="Top Groups by Rogues"
+          definition="Asset groups with the highest concentration of rogue (unmanaged) devices."
+          scope="All groups"
+          timeWindow={timeWindow}
+          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+          action={
+            onViewAll && (
+              <button 
+                onClick={onViewAll}
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                View all <ChevronRight className="h-3 w-3" />
+              </button>
+            )
+          }
+        />
       </CardHeader>
       <CardContent className="space-y-2">
         {groups.slice(0, 5).map((group, index) => (
-          <div key={index} className="space-y-1">
+          <div key={group.groupId || index} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
               <span className="text-foreground truncate max-w-[60%]">{group.name}</span>
               <div className="flex items-center gap-2">

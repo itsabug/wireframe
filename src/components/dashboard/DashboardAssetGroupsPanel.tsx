@@ -9,7 +9,7 @@ import { Search, Pin, ChevronRight, Sparkles, Settings, FolderOpen } from "lucid
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { TOTAL_MANAGED_ASSETS } from "@/data/dashboard-mock-data";
+import { ASSET_METRICS } from "@/data/unified-dashboard-data";
 
 interface AssetGroupItem {
   id: string;
@@ -38,7 +38,7 @@ export const DashboardAssetGroupsPanel = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['system', 'user']));
 
   // Use the consistent total from mock data
-  const displayTotal = TOTAL_MANAGED_ASSETS;
+  const displayTotal = ASSET_METRICS.TOTAL_MANAGED_ASSETS;
 
   // Categorize groups by Internal vs External (based on locality focus)
   const internalGroups = useMemo(() => 
