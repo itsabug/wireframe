@@ -22,7 +22,6 @@ import {
   RogueAssetsCard,
   MitreAttackSummaryCard,
   RecentlyAddedAssetsCard,
-  AssetGroupHealthCard,
   OwnershipCoverageCard,
   LocalityCoverageCard,
   ZoneCoverageCard,
@@ -131,12 +130,6 @@ export const AssetDashboardPanel = ({
             {widgetsVisible && (
               <div className="grid grid-cols-4 gap-3">
                 {/* Inventory & Lifecycle */}
-                <AssetGroupHealthCard
-                  totalGroups={dashboardGroupsData.length}
-                  internalCount={16}
-                  externalCount={8}
-                  trend={5}
-                />
                 <NewAssetsByGroupCard data={newAssetsByGroup} />
                 <StaleAssetBreakdownCard
                   breakdown={staleBreakdown}
