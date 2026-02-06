@@ -105,8 +105,6 @@ export const AssetDashboardPanel = ({
                 onViewAll={() => onViewFilterChange("rogue")}
               />
               <MitreAttackSummaryCard
-                activeEvents={226}
-                totalEvents={340}
                 tactics={mitreTactics}
               />
               <RecentlyAddedAssetsCard
@@ -146,8 +144,6 @@ export const AssetDashboardPanel = ({
                 {/* Network Segmentation */}
                 <LocalityCoverageCard
                   localities={localitiesData}
-                  totalMapped={220}
-                  totalAssets={240}
                 />
                 <ZoneCoverageCard zones={zonesData} coverageGaps={coverageGaps} />
                 <UncoveredSubnetsCard subnets={uncoveredSubnets} />
