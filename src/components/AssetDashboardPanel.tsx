@@ -22,10 +22,8 @@ import {
   RogueAssetsCard,
   MitreAttackSummaryCard,
   RecentlyAddedAssetsCard,
-  TrafficSummaryCard,
   AssetGroupHealthCard,
   OwnershipCoverageCard,
-  AssetTypeDistributionCard,
   LocalityCoverageCard,
   ZoneCoverageCard,
   StaleAssetBreakdownCard,
@@ -33,12 +31,10 @@ import {
   HotZonesCard,
   TopGroupsByRoguesCard,
   UncoveredSubnetsCard,
-  RecentlyRetaggedCard,
 } from "@/components/dashboard";
 
 import {
   dashboardGroupsData,
-  assetTypeDistribution,
   localitiesData,
   zonesData,
   coverageGaps,
@@ -49,10 +45,8 @@ import {
   staleTrendData,
   newAssetsByGroup,
   uncoveredSubnets,
-  recentTagChanges,
   rogueAssets,
   mitreTactics,
-  trafficChartData,
 } from "@/data/dashboard-mock-data";
 
 interface AssetDashboardPanelProps {
@@ -123,13 +117,6 @@ export const AssetDashboardPanel = ({
               />
             </div>
 
-            {/* Traffic Card */}
-            <TrafficSummaryCard
-              inboundGB={2.3}
-              outboundMB={852}
-              chartData={trafficChartData}
-            />
-
             {/* Toggle Widgets Button */}
             <button
               onClick={() => setWidgetsVisible(!widgetsVisible)}
@@ -163,9 +150,6 @@ export const AssetDashboardPanel = ({
                   overdueReviews={3}
                 />
 
-                {/* Asset Type Distribution */}
-                <AssetTypeDistributionCard data={assetTypeDistribution} />
-
                 {/* Network Segmentation */}
                 <LocalityCoverageCard
                   localities={localitiesData}
@@ -176,7 +160,6 @@ export const AssetDashboardPanel = ({
                 <UncoveredSubnetsCard subnets={uncoveredSubnets} />
 
                 {/* Quick Updates / Tiles */}
-                <RecentlyRetaggedCard changes={recentTagChanges} onSelectAsset={onSelectAsset} />
                 <TopGroupsByRoguesCard groups={topGroupsByRogues} timeWindow="7 days" />
                 <HotZonesCard zones={hotZones} />
               </div>
