@@ -8,7 +8,7 @@ interface HotZone {
   detections: number;
   newAssets: number;
   trend: "up" | "down" | "stable";
-  severity: "critical" | "high" | "medium";
+  severity: "critical" | "high" | "medium" | "low";
 }
 
 interface HotZonesCardProps {
@@ -21,6 +21,7 @@ export const HotZonesCard = ({ zones }: HotZonesCardProps) => {
       case "critical": return "bg-destructive/20 text-destructive border-destructive/30";
       case "high": return "bg-threat-high/20 text-threat-high border-threat-high/30";
       case "medium": return "bg-amber-500/20 text-amber-600 border-amber-500/30";
+      case "low": return "bg-muted text-muted-foreground border-border";
     }
   };
 
