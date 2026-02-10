@@ -92,6 +92,9 @@ export const mockAssets: Asset[] = [
       { value: '192.168.10.42', timestamp: '2025-09-19T22:00:00Z', isCurrent: false },
       { value: '192.168.10.88', timestamp: '2025-09-15T06:00:00Z', isCurrent: false },
       { value: '192.168.10.88', timestamp: '2025-09-17T20:00:00Z', isCurrent: false },
+      // Re-allocated IP — same IP used again after a gap
+      { value: '10.24.8.160', timestamp: '2026-01-25T08:00:00Z', isCurrent: false },
+      { value: '10.24.8.160', timestamp: '2026-01-28T18:00:00Z', isCurrent: false },
     ],
     hostnameHistory: [
       { value: 'CentralServer-01', timestamp: '2026-02-01', isCurrent: true },
