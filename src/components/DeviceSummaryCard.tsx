@@ -128,7 +128,7 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-medium">{currentIP?.value}</span>
-                {asset.ipHistory.length > 1 && (
+                {asset.ipHistory.length >= 1 && (
                   <AddressHistorySheet ipHistory={asset.ipHistory} macHistory={asset.macHistory} defaultTab="ip">
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -137,7 +137,7 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="right">
-                        <p className="text-xs">View {asset.ipHistory.length} historical IPs</p>
+                        <p className="text-xs">View address history</p>
                       </TooltipContent>
                     </Tooltip>
                   </AddressHistorySheet>
@@ -154,7 +154,7 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-medium">{currentMAC?.value}</span>
-                {asset.macHistory.length > 1 && (
+                {asset.macHistory.length >= 1 && (
                   <AddressHistorySheet ipHistory={asset.ipHistory} macHistory={asset.macHistory} defaultTab="mac">
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -163,7 +163,7 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="right">
-                        <p className="text-xs">View {asset.macHistory.length} historical MACs</p>
+                        <p className="text-xs">View address history</p>
                       </TooltipContent>
                     </Tooltip>
                   </AddressHistorySheet>
