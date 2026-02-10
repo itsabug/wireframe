@@ -1,7 +1,7 @@
 import { Asset } from "@/types/asset";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Info, Server, MapPin, Clock, Wifi, Cable, Link2, Edit3, User, Users, Shield } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, Server, MapPin, Clock, Wifi, Cable, Link2, Edit3, User, Users, Shield, History } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { IPHistoryModal } from "./IPHistoryModal";
+import { AddressHistorySheet } from "./AddressHistorySheet";
 
 interface DeviceSummaryCardProps {
   asset: Asset;
@@ -69,16 +69,13 @@ const formatLabel = (value: string) =>
     .join(" ");
 
 export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
-  const [showAllMACs, setShowAllMACs] = useState(false);
   const { staleAfterDays } = useLifecycleSettings();
   const { isStale, staleDays } = getStaleInfo(asset.lastSeen, staleAfterDays);
   const statusLabel =
     isStale && staleDays !== null ? `Stale ${staleDays}d` : formatLabel(asset.status);
 
   const currentIP = asset.ipHistory.find(ip => ip.isCurrent);
-  const historicalIPs = asset.ipHistory.filter(ip => !ip.isCurrent);
   const currentMAC = asset.macHistory.find(mac => mac.isCurrent);
-  const historicalMACs = asset.macHistory.filter(mac => !mac.isCurrent);
 
   // Determine if integration data is available (simulated check)
   const hasNMSIntegration = !!(asset.connectedSwitch || asset.switchPort);
@@ -123,68 +120,56 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
           
           <InfoRow label="Hostname" value={asset.hostname} tooltip="Hostname detected from DNS queries, DHCP, or NetBIOS" />
           
-          {/* Current IP with modal for history */}
+          {/* Current IP with sheet for history */}
           <div className="py-1.5 border-b border-border/50">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted-foreground">IP Address</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-xs">
-                    <p className="text-xs">Current IP from packet capture. Click to view history.</p>
-                  </TooltipContent>
-                </Tooltip>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-medium">{currentIP?.value}</span>
-                {historicalIPs.length > 0 && (
-                  <IPHistoryModal ipHistory={asset.ipHistory}>
-                    <button className="text-xs text-primary hover:underline flex items-center gap-1">
-                      <span>{asset.ipHistory.length} IPs</span>
-                      <ChevronDown className="h-3 w-3" />
-                    </button>
-                  </IPHistoryModal>
+                {asset.ipHistory.length > 1 && (
+                  <AddressHistorySheet ipHistory={asset.ipHistory} macHistory={asset.macHistory} defaultTab="ip">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="text-muted-foreground/60 hover:text-primary transition-colors">
+                          <History className="h-3.5 w-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p className="text-xs">View {asset.ipHistory.length} historical IPs</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </AddressHistorySheet>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Current MAC with expandable history */}
+          {/* Current MAC with sheet for history */}
           <div className="py-1.5 border-b border-border/50">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted-foreground">MAC Address</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-xs">
-                    <p className="text-xs">Hardware address from ARP/NDP</p>
-                  </TooltipContent>
-                </Tooltip>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-medium">{currentMAC?.value}</span>
+                {asset.macHistory.length > 1 && (
+                  <AddressHistorySheet ipHistory={asset.ipHistory} macHistory={asset.macHistory} defaultTab="mac">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="text-muted-foreground/60 hover:text-primary transition-colors">
+                          <History className="h-3.5 w-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p className="text-xs">View {asset.macHistory.length} historical MACs</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </AddressHistorySheet>
+                )}
               </div>
             </div>
-            {historicalMACs.length > 0 && (
-              <Collapsible open={showAllMACs} onOpenChange={setShowAllMACs}>
-                <CollapsibleTrigger className="flex items-center gap-1 text-xs text-primary hover:underline mt-1.5 ml-auto">
-                  {showAllMACs ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  {historicalMACs.length} previous MAC{historicalMACs.length > 1 ? 's' : ''}
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-2 space-y-1.5 pl-2 border-l-2 border-muted ml-1">
-                  {historicalMACs.map((mac, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs">
-                      <span className="font-mono text-muted-foreground">{mac.value}</span>
-                      <span className="text-muted-foreground/60">{mac.timestamp}</span>
-                    </div>
-                  ))}
-                </CollapsibleContent>
-              </Collapsible>
-            )}
           </div>
 
           {asset.network && (
