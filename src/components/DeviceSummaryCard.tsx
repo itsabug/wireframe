@@ -129,18 +129,20 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-medium">{currentIP?.value}</span>
                 {asset.ipHistory.length >= 1 && (
-                  <AddressHistorySheet ipHistory={asset.ipHistory} macHistory={asset.macHistory} defaultTab="ip">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button className="text-muted-foreground/60 hover:text-primary transition-colors">
-                          <History className="h-3.5 w-3.5" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p className="text-xs">View address history</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </AddressHistorySheet>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <AddressHistorySheet ipHistory={asset.ipHistory} macHistory={asset.macHistory} defaultTab="ip">
+                          <button className="text-muted-foreground/60 hover:text-primary transition-colors">
+                            <History className="h-3.5 w-3.5" />
+                          </button>
+                        </AddressHistorySheet>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="text-xs">View address history</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </div>
@@ -155,18 +157,20 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-medium">{currentMAC?.value}</span>
                 {asset.macHistory.length >= 1 && (
-                  <AddressHistorySheet ipHistory={asset.ipHistory} macHistory={asset.macHistory} defaultTab="mac">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button className="text-muted-foreground/60 hover:text-primary transition-colors">
-                          <History className="h-3.5 w-3.5" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p className="text-xs">View address history</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </AddressHistorySheet>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <AddressHistorySheet ipHistory={asset.ipHistory} macHistory={asset.macHistory} defaultTab="mac">
+                          <button className="text-muted-foreground/60 hover:text-primary transition-colors">
+                            <History className="h-3.5 w-3.5" />
+                          </button>
+                        </AddressHistorySheet>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="text-xs">View address history</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </div>
