@@ -82,6 +82,13 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
   const hasWirelessIntegration = !!(asset.accessPoint || asset.ssid);
   const hasDeviceTypeData = !!(asset.deviceType && asset.deviceType !== 'Unknown');
   const hasRoleData = !!(asset.roleTag && asset.roleTag !== 'Unknown');
+
+  // Only show NMS/OpManager integration details for servers and network devices
+  const isNMSEligible = ['Server', 'Router', 'Switch', 'Firewall', 'Load Balancer', 'Network Device'].some(
+    t => asset.deviceType?.toLowerCase().includes(t.toLowerCase()) || asset.roleTag?.toLowerCase().includes(t.toLowerCase())
+  );
+  const showNMSDetails = isNMSEligible && (hasNMSIntegration || hasWirelessIntegration || hasDeviceTypeData || hasRoleData);
+
   const hasGovernance =
     asset.status ||
     asset.criticality ||
@@ -224,7 +231,7 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
             </Tooltip>
           </div>
           
-          {hasNMSIntegration || hasWirelessIntegration || hasDeviceTypeData || hasRoleData ? (
+          {showNMSDetails ? (
             <>
               {/* Full NMS/integration view (existing) */}
               <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
