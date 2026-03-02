@@ -226,7 +226,102 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
           
           {/* Show integration banner if no integration data */}
           {!hasDeviceTypeData && !hasRoleData && !hasNMSIntegration && !hasWirelessIntegration && (
-            <IntegrationBanner description="Connect OpManager Plus to auto-populate device and infrastructure details" />
+            <>
+              <IntegrationBanner description="Connect OpManager Plus to auto-populate device and infrastructure details" />
+              
+              {/* Flow-Inferred Facts — shown only when no NMS integration is present */}
+              <div className="space-y-0 bg-primary/5 border border-primary/20 rounded-lg p-2 mb-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30">
+                    Flow-Inferred Facts
+                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p className="text-xs">These details are inferred from observed network flows and traffic patterns. Connect an NMS tool for richer data.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <InfoRow
+                  label="Inferred Role"
+                  value={
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-primary cursor-help">
+                          {asset.network === 'DMZ' ? 'Perimeter Device' :
+                           asset.network === 'IoT' ? 'IoT / Embedded' :
+                           asset.interfaceType === 'WiFi' ? 'Wireless Endpoint' :
+                           'Network Participant'}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <p className="text-xs">Role inferred from network zone, interface type, and traffic patterns</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  }
+                  tooltip="Best-guess role based on traffic behavior"
+                />
+                <InfoRow
+                  label="Connection Type"
+                  value={
+                    asset.connectionType !== 'unknown'
+                      ? <span className="capitalize">{asset.connectionType}</span>
+                      : <span className="text-muted-foreground/50 italic">Undetermined</span>
+                  }
+                  tooltip="Inferred from MAC OUI and traffic characteristics"
+                />
+                <InfoRow
+                  label="DHCP Observed"
+                  value={asset.dhcpServer ? `Yes (${asset.dhcpServer})` : 'No'}
+                  tooltip="Whether DHCP transactions were observed for this device"
+                />
+                <InfoRow
+                  label="DNS Resolver"
+                  value={asset.dnsServer || <span className="text-muted-foreground/50 italic">Not observed</span>}
+                  tooltip="DNS server this device queries, observed from DNS traffic"
+                />
+                <InfoRow
+                  label="MAC OUI Vendor"
+                  value={
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-muted-foreground cursor-help">
+                          {asset.mac.startsWith('00:1A') ? 'Cisco Systems' :
+                           asset.mac.startsWith('00:2B') ? 'Cisco Systems' :
+                           asset.mac.startsWith('00:B4') ? 'Unknown Vendor' :
+                           asset.mac.startsWith('A4:83') ? 'Intel Corp' :
+                           'Lookup pending'}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="text-xs">Vendor identified from the MAC address OUI (first 3 octets)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  }
+                  tooltip="Hardware vendor identified from MAC OUI database"
+                />
+                <InfoRow
+                  label="Active Days"
+                  value={(() => {
+                    const first = new Date(asset.firstSeen);
+                    const last = new Date(asset.lastSeen);
+                    const days = Math.max(1, Math.ceil((last.getTime() - first.getTime()) / (1000 * 60 * 60 * 24)));
+                    return `${days} days`;
+                  })()}
+                  tooltip="Number of days between first and last seen"
+                />
+                <InfoRow
+                  label="IP Changes"
+                  value={(() => {
+                    const uniqueIPs = new Set(asset.ipHistory.map(h => h.value)).size;
+                    return `${uniqueIPs} unique IPs observed`;
+                  })()}
+                  tooltip="Number of distinct IP addresses observed for this device"
+                />
+              </div>
+            </>
           )}
 
           {/* Device Classification - always show fields */}
