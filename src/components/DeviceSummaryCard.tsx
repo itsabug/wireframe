@@ -1,7 +1,7 @@
 import { Asset } from "@/types/asset";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Info, Server, MapPin, Clock, Wifi, Cable, Link2, Edit3, User, Users, Shield, History } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, Server, MapPin, Clock, Wifi, Cable, Link2, Edit3, User, Users, Shield, History, Activity, BarChart3, Globe, Zap, Radio } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -208,7 +208,7 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
           </div>
         </div>
 
-        {/* Section 2: Device & Infrastructure Details (from Integration) */}
+        {/* Section 2: Device & Infrastructure Details */}
         <div className="pt-3 border-t border-border">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-warning/10 text-warning border-warning/30">
@@ -219,296 +219,265 @@ export const DeviceSummaryCard = ({ asset }: DeviceSummaryCardProps) => {
                 <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-xs">
-                <p className="text-xs">Device classification and infrastructure details - auto-populated via OpManager Plus integration or enter manually</p>
+                <p className="text-xs">Device classification and infrastructure details — auto-populated via OpManager Plus integration or inferred from traffic</p>
               </TooltipContent>
             </Tooltip>
           </div>
           
-          {/* Show integration banner if no integration data */}
-          {!hasDeviceTypeData && !hasRoleData && !hasNMSIntegration && !hasWirelessIntegration && (
+          {hasNMSIntegration || hasWirelessIntegration || hasDeviceTypeData || hasRoleData ? (
             <>
-              <IntegrationBanner description="Connect OpManager Plus to auto-populate device and infrastructure details" />
-              
-              {/* Flow-Inferred Facts — shown only when no NMS integration is present */}
-              <div className="space-y-0 bg-primary/5 border border-primary/20 rounded-lg p-2 mb-2">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30">
-                    Flow-Inferred Facts
-                  </Badge>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-xs">These details are inferred from observed network flows and traffic patterns. Connect an NMS tool for richer data.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+              {/* Full NMS/integration view (existing) */}
+              <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
+                <p className="text-[10px] text-muted-foreground mb-1.5 font-medium">Classification</p>
+                <InfoRow 
+                  label="Device Type" 
+                  value={hasDeviceTypeData ? asset.deviceType : <span className="text-muted-foreground/50 italic">Not specified</span>} 
+                  tooltip="Device classification — auto-populated via integration or enter manually"
+                  editable
+                />
+                <InfoRow 
+                  label="Role" 
+                  value={hasRoleData ? asset.roleTag : <span className="text-muted-foreground/50 italic">Not specified</span>} 
+                  tooltip="Assigned role — auto-populated via integration or enter manually"
+                  editable
+                />
+                <InfoRow 
+                  label="Category" 
+                  value={asset.category || <span className="text-muted-foreground/50 italic">Not specified</span>} 
+                  tooltip="Asset category for grouping"
+                  editable
+                />
+              </div>
+
+              <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
+                <p className="text-[10px] text-muted-foreground mb-1.5 font-medium">System Profile</p>
                 <InfoRow
-                  label="Inferred Role"
+                  label="OS"
                   value={
+                    asset.osName
+                      ? `${asset.osName}${asset.osVersion ? ` ${asset.osVersion}` : ""}`
+                      : <span className="text-muted-foreground/50 italic">Not specified</span>
+                  }
+                  tooltip="Operating system identified from network telemetry or integration"
+                  editable
+                />
+                <InfoRow label="Vendor" value={asset.vendor || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Hardware vendor" editable />
+                <InfoRow label="Model" value={asset.model || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Hardware model" editable />
+                <InfoRow label="Serial" value={asset.serial || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Device serial number" editable />
+              </div>
+
+              {/* Infrastructure - Wired */}
+              {asset.connectionType === 'wired' && (
+                <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Cable className="h-3 w-3 text-muted-foreground" />
+                    <p className="text-[10px] text-muted-foreground font-medium">Wired Connection</p>
+                  </div>
+                  <InfoRow label="Switch" value={hasNMSIntegration && asset.connectedSwitch ? asset.connectedSwitch : <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Connected switch" editable />
+                  <InfoRow label="Port" value={hasNMSIntegration && asset.switchPort ? asset.switchPort : <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Switch port" editable />
+                  <InfoRow label="VLAN" value={asset.vlan || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="VLAN assignment" editable />
+                  <InfoRow label="Subnet" value={asset.subnet || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="IP subnet" editable />
+                  <InfoRow label="Gateway" value={asset.gateway || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Default gateway" editable />
+                </div>
+              )}
+
+              {/* Infrastructure - Wireless */}
+              {asset.connectionType === 'wireless' && (
+                <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Wifi className="h-3 w-3 text-muted-foreground" />
+                    <p className="text-[10px] text-muted-foreground font-medium">Wireless Connection</p>
+                  </div>
+                  <InfoRow label="SSID" value={hasWirelessIntegration && asset.ssid ? asset.ssid : <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Wireless network name" editable />
+                  <InfoRow 
+                    label="Access Point" 
+                    value={hasWirelessIntegration && asset.accessPoint ? (
+                      <div className="text-right">
+                        <div>{asset.accessPoint}</div>
+                        {asset.accessPointMac && (
+                          <div className="text-[10px] font-mono text-muted-foreground">{asset.accessPointMac}</div>
+                        )}
+                      </div>
+                    ) : <span className="text-muted-foreground/50 italic">Not specified</span>} 
+                    tooltip="Connected access point"
+                    editable
+                  />
+                  {hasWirelessIntegration && asset.frequency && (
+                    <InfoRow label="Frequency" value={`${asset.frequency} (Ch ${asset.channel})`} tooltip="Wireless frequency band and channel" />
+                  )}
+                  {hasWirelessIntegration && asset.signalStrength !== undefined && (
+                    <InfoRow 
+                      label="Signal" 
+                      value={
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map((bar) => (
+                              <div 
+                                key={bar} 
+                                className={cn(
+                                  "w-1 rounded-sm",
+                                  bar === 1 ? "h-1" : bar === 2 ? "h-2" : bar === 3 ? "h-3" : bar === 4 ? "h-3.5" : "h-4",
+                                  asset.signalStrength! >= -50 ? (bar <= 5 ? "bg-success" : "bg-muted") :
+                                  asset.signalStrength! >= -60 ? (bar <= 4 ? "bg-success" : "bg-muted") :
+                                  asset.signalStrength! >= -70 ? (bar <= 3 ? "bg-warning" : "bg-muted") :
+                                  asset.signalStrength! >= -80 ? (bar <= 2 ? "bg-destructive" : "bg-muted") :
+                                  (bar <= 1 ? "bg-destructive" : "bg-muted")
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <span>{asset.signalStrength} dBm</span>
+                        </div>
+                      } 
+                      tooltip={`Signal strength: ${asset.signalStrength} dBm${asset.snr ? `, SNR: ${asset.snr} dB` : ''}`} 
+                    />
+                  )}
+                  {hasWirelessIntegration && asset.authMethod && (
+                    <InfoRow 
+                      label="Security" 
+                      value={
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/30">
+                          {asset.authMethod}
+                        </Badge>
+                      } 
+                      tooltip={`Authentication: ${asset.authMethod}${asset.encryptionType ? `, Encryption: ${asset.encryptionType}` : ''}`} 
+                    />
+                  )}
+                  <InfoRow label="VLAN" value={asset.vlan || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="VLAN assignment" editable />
+                  <InfoRow label="Subnet" value={asset.subnet || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="IP subnet" editable />
+                  <InfoRow label="Gateway" value={asset.gateway || <span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Default gateway" editable />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* No NMS Integration — Traffic Profile (primary view for majority of devices) */}
+              <IntegrationBanner description="Connect OpManager Plus to auto-populate device details, or classify manually below" />
+              
+              {/* Traffic Profile — the main content for unmanaged devices */}
+              <div className="space-y-2">
+                {/* Behavioral Role Inference */}
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Activity className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[10px] font-medium text-primary">Traffic Profile</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-primary cursor-help">
-                          {asset.network === 'DMZ' ? 'Perimeter Device' :
-                           asset.network === 'IoT' ? 'IoT / Embedded' :
-                           asset.interfaceType === 'WiFi' ? 'Wireless Endpoint' :
-                           'Network Participant'}
-                        </span>
+                        <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p className="text-xs">All details below are inferred from observed network flows and traffic patterns. No NMS integration required.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  {/* Inferred Role — prominent */}
+                  <div className="flex items-center justify-between p-2 bg-primary/10 rounded-lg mb-2">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Inferred Role</p>
+                      <p className="text-sm font-medium text-primary">
+                        {asset.network === 'DMZ' ? 'Perimeter Device' :
+                         asset.network === 'IoT' ? 'IoT / Embedded' :
+                         asset.interfaceType === 'WiFi' ? 'Wireless Endpoint' :
+                         asset.connectionType === 'wired' ? 'Wired Endpoint' :
+                         'Network Participant'}
+                      </p>
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30 cursor-help">
+                          Flow-based
+                        </Badge>
                       </TooltipTrigger>
                       <TooltipContent side="left" className="max-w-xs">
-                        <p className="text-xs">Role inferred from network zone, interface type, and traffic patterns</p>
+                        <p className="text-xs">Inferred from network zone, interface type, and traffic patterns. Connect NMS for accurate classification.</p>
                       </TooltipContent>
                     </Tooltip>
-                  }
-                  tooltip="Best-guess role based on traffic behavior"
-                />
-                <InfoRow
-                  label="Connection Type"
-                  value={
-                    asset.connectionType !== 'unknown'
-                      ? <span className="capitalize">{asset.connectionType}</span>
-                      : <span className="text-muted-foreground/50 italic">Undetermined</span>
-                  }
-                  tooltip="Inferred from MAC OUI and traffic characteristics"
-                />
-                <InfoRow
-                  label="DHCP Observed"
-                  value={asset.dhcpServer ? `Yes (${asset.dhcpServer})` : 'No'}
-                  tooltip="Whether DHCP transactions were observed for this device"
-                />
-                <InfoRow
-                  label="DNS Resolver"
-                  value={asset.dnsServer || <span className="text-muted-foreground/50 italic">Not observed</span>}
-                  tooltip="DNS server this device queries, observed from DNS traffic"
-                />
-                <InfoRow
-                  label="MAC OUI Vendor"
-                  value={
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="text-muted-foreground cursor-help">
-                          {asset.mac.startsWith('00:1A') ? 'Cisco Systems' :
-                           asset.mac.startsWith('00:2B') ? 'Cisco Systems' :
-                           asset.mac.startsWith('00:B4') ? 'Unknown Vendor' :
-                           asset.mac.startsWith('A4:83') ? 'Intel Corp' :
-                           'Lookup pending'}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        <p className="text-xs">Vendor identified from the MAC address OUI (first 3 octets)</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  }
-                  tooltip="Hardware vendor identified from MAC OUI database"
-                />
-                <InfoRow
-                  label="Active Days"
-                  value={(() => {
-                    const first = new Date(asset.firstSeen);
-                    const last = new Date(asset.lastSeen);
-                    const days = Math.max(1, Math.ceil((last.getTime() - first.getTime()) / (1000 * 60 * 60 * 24)));
-                    return `${days} days`;
-                  })()}
-                  tooltip="Number of days between first and last seen"
-                />
-                <InfoRow
-                  label="IP Changes"
-                  value={(() => {
-                    const uniqueIPs = new Set(asset.ipHistory.map(h => h.value)).size;
-                    return `${uniqueIPs} unique IPs observed`;
-                  })()}
-                  tooltip="Number of distinct IP addresses observed for this device"
-                />
-              </div>
-            </>
-          )}
+                  </div>
 
-          {/* Device Classification - always show fields */}
-          <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
-            <p className="text-[10px] text-muted-foreground mb-1.5 font-medium">Classification</p>
-            <InfoRow 
-              label="Device Type" 
-              value={hasDeviceTypeData ? asset.deviceType : <span className="text-muted-foreground/50 italic">Not specified</span>} 
-              tooltip="Device classification - auto-populated via integration or enter manually"
-              editable
-            />
-            <InfoRow 
-              label="Role" 
-              value={hasRoleData ? asset.roleTag : <span className="text-muted-foreground/50 italic">Not specified</span>} 
-              tooltip="Assigned role - auto-populated via integration or enter manually"
-              editable
-            />
-            <InfoRow 
-              label="Category" 
-              value={asset.category || <span className="text-muted-foreground/50 italic">Not specified</span>} 
-              tooltip="Asset category for grouping"
-              editable
-            />
-          </div>
+                  {/* Key metrics grid */}
+                  <div className="grid grid-cols-2 gap-1.5 mb-2">
+                    <div className="p-1.5 bg-secondary/40 rounded">
+                      <p className="text-[10px] text-muted-foreground">Active Duration</p>
+                      <p className="text-xs font-medium font-mono">
+                        {(() => {
+                          const first = new Date(asset.firstSeen);
+                          const last = new Date(asset.lastSeen);
+                          const days = Math.max(1, Math.ceil((last.getTime() - first.getTime()) / (1000 * 60 * 60 * 24)));
+                          return `${days} days`;
+                        })()}
+                      </p>
+                    </div>
+                    <div className="p-1.5 bg-secondary/40 rounded">
+                      <p className="text-[10px] text-muted-foreground">IP Changes</p>
+                      <p className="text-xs font-medium font-mono">
+                        {new Set(asset.ipHistory.map(h => h.value)).size} unique
+                      </p>
+                    </div>
+                    <div className="p-1.5 bg-secondary/40 rounded">
+                      <p className="text-[10px] text-muted-foreground">Connection Type</p>
+                      <p className="text-xs font-medium capitalize">
+                        {asset.connectionType !== 'unknown' ? asset.connectionType : 'Undetermined'}
+                      </p>
+                    </div>
+                    <div className="p-1.5 bg-secondary/40 rounded">
+                      <p className="text-[10px] text-muted-foreground">MAC Vendor</p>
+                      <p className="text-xs font-medium truncate">
+                        {asset.mac.startsWith('00:1A') ? 'Cisco Systems' :
+                         asset.mac.startsWith('00:2B') ? 'Cisco Systems' :
+                         asset.mac.startsWith('00:92') ? 'Roper Mobile' :
+                         asset.mac.startsWith('A4:83') ? 'Intel Corp' :
+                         asset.mac.startsWith('00:A3') ? 'Espressif' :
+                         asset.mac.startsWith('00:B4') ? 'Unknown' :
+                         'Lookup pending'}
+                      </p>
+                    </div>
+                  </div>
 
-          <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
-            <p className="text-[10px] text-muted-foreground mb-1.5 font-medium">System Profile</p>
-            <InfoRow
-              label="OS"
-              value={
-                asset.osName
-                  ? `${asset.osName}${asset.osVersion ? ` ${asset.osVersion}` : ""}`
-                  : <span className="text-muted-foreground/50 italic">Not specified</span>
-              }
-              tooltip="Operating system identified from network telemetry or integration"
-              editable
-            />
-            <InfoRow
-              label="Vendor"
-              value={asset.vendor || <span className="text-muted-foreground/50 italic">Not specified</span>}
-              tooltip="Hardware vendor"
-              editable
-            />
-            <InfoRow
-              label="Model"
-              value={asset.model || <span className="text-muted-foreground/50 italic">Not specified</span>}
-              tooltip="Hardware model"
-              editable
-            />
-            <InfoRow
-              label="Serial"
-              value={asset.serial || <span className="text-muted-foreground/50 italic">Not specified</span>}
-              tooltip="Device serial number"
-              editable
-            />
-          </div>
-
-          {/* Infrastructure - Wired */}
-          {asset.connectionType === 'wired' && (
-            <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Cable className="h-3 w-3 text-muted-foreground" />
-                <p className="text-[10px] text-muted-foreground font-medium">Wired Connection</p>
-              </div>
-              <InfoRow 
-                label="Switch" 
-                value={hasNMSIntegration && asset.connectedSwitch ? asset.connectedSwitch : <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="Connected switch - auto-populated via integration or enter manually"
-                editable
-              />
-              <InfoRow 
-                label="Port" 
-                value={hasNMSIntegration && asset.switchPort ? asset.switchPort : <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="Switch port - auto-populated via integration or enter manually"
-                editable
-              />
-              <InfoRow 
-                label="VLAN" 
-                value={asset.vlan || <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="VLAN assignment"
-                editable
-              />
-              <InfoRow 
-                label="Subnet" 
-                value={asset.subnet || <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="IP subnet"
-                editable
-              />
-              <InfoRow 
-                label="Gateway" 
-                value={asset.gateway || <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="Default gateway"
-                editable
-              />
-            </div>
-          )}
-
-          {/* Infrastructure - Wireless */}
-          {asset.connectionType === 'wireless' && (
-            <div className="space-y-0 bg-secondary/30 rounded-lg p-2 mb-2">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Wifi className="h-3 w-3 text-muted-foreground" />
-                <p className="text-[10px] text-muted-foreground font-medium">Wireless Connection</p>
-              </div>
-              <InfoRow 
-                label="SSID" 
-                value={hasWirelessIntegration && asset.ssid ? asset.ssid : <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="Wireless network name - auto-populated via integration or enter manually"
-                editable
-              />
-              <InfoRow 
-                label="Access Point" 
-                value={hasWirelessIntegration && asset.accessPoint ? (
-                  <div className="text-right">
-                    <div>{asset.accessPoint}</div>
-                    {asset.accessPointMac && (
-                      <div className="text-[10px] font-mono text-muted-foreground">{asset.accessPointMac}</div>
+                  {/* Network observations */}
+                  <div className="space-y-0">
+                    {asset.dhcpServer && (
+                      <InfoRow label="DHCP Server" value={asset.dhcpServer} tooltip="DHCP server observed leasing addresses to this device" />
+                    )}
+                    {asset.dnsServer && (
+                      <InfoRow label="DNS Resolver" value={asset.dnsServer} tooltip="DNS server this device queries, observed from DNS traffic" />
+                    )}
+                    {asset.subnet && (
+                      <InfoRow label="Subnet" value={asset.subnet} tooltip="IP subnet inferred from address and mask" />
+                    )}
+                    {asset.gateway && (
+                      <InfoRow label="Gateway" value={asset.gateway} tooltip="Default gateway observed from traffic" />
+                    )}
+                    {asset.vlan && (
+                      <InfoRow label="VLAN" value={asset.vlan} tooltip="VLAN observed from traffic tagging" />
                     )}
                   </div>
-                ) : <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="Connected access point - auto-populated via integration or enter manually"
-                editable
-              />
-              {hasWirelessIntegration && asset.frequency && (
-                <InfoRow 
-                  label="Frequency" 
-                  value={`${asset.frequency} (Ch ${asset.channel})`} 
-                  tooltip="Wireless frequency band and channel" 
-                />
-              )}
-              {hasWirelessIntegration && asset.signalStrength !== undefined && (
-                <InfoRow 
-                  label="Signal" 
-                  value={
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map((bar) => (
-                          <div 
-                            key={bar} 
-                            className={cn(
-                              "w-1 rounded-sm",
-                              bar === 1 ? "h-1" : bar === 2 ? "h-2" : bar === 3 ? "h-3" : bar === 4 ? "h-3.5" : "h-4",
-                              asset.signalStrength! >= -50 ? (bar <= 5 ? "bg-success" : "bg-muted") :
-                              asset.signalStrength! >= -60 ? (bar <= 4 ? "bg-success" : "bg-muted") :
-                              asset.signalStrength! >= -70 ? (bar <= 3 ? "bg-warning" : "bg-muted") :
-                              asset.signalStrength! >= -80 ? (bar <= 2 ? "bg-destructive" : "bg-muted") :
-                              (bar <= 1 ? "bg-destructive" : "bg-muted")
-                            )}
-                          />
-                        ))}
+                </div>
+
+                {/* Manual Classification — compact, collapsed by default */}
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <button className="flex items-center justify-between w-full p-2 bg-secondary/30 rounded-lg text-xs text-muted-foreground hover:bg-secondary/50 transition-colors">
+                      <div className="flex items-center gap-1.5">
+                        <Edit3 className="h-3 w-3" />
+                        <span>Manual Classification</span>
                       </div>
-                      <span>{asset.signalStrength} dBm</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="mt-1.5 bg-secondary/30 rounded-lg p-2 space-y-0">
+                      <InfoRow label="Device Type" value={<span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Set device type manually" editable />
+                      <InfoRow label="Role" value={<span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Set role manually" editable />
+                      <InfoRow label="Category" value={<span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Set category manually" editable />
+                      <InfoRow label="OS" value={<span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Set OS manually" editable />
+                      <InfoRow label="Vendor" value={<span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Set vendor manually" editable />
+                      <InfoRow label="Model" value={<span className="text-muted-foreground/50 italic">Not specified</span>} tooltip="Set model manually" editable />
                     </div>
-                  } 
-                  tooltip={`Signal strength: ${asset.signalStrength} dBm${asset.snr ? `, SNR: ${asset.snr} dB` : ''}`} 
-                />
-              )}
-              {hasWirelessIntegration && asset.authMethod && (
-                <InfoRow 
-                  label="Security" 
-                  value={
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/30">
-                      {asset.authMethod}
-                    </Badge>
-                  } 
-                  tooltip={`Authentication: ${asset.authMethod}${asset.encryptionType ? `, Encryption: ${asset.encryptionType}` : ''}`} 
-                />
-              )}
-              <InfoRow 
-                label="VLAN" 
-                value={asset.vlan || <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="VLAN assignment"
-                editable
-              />
-              <InfoRow 
-                label="Subnet" 
-                value={asset.subnet || <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="IP subnet"
-                editable
-              />
-              <InfoRow 
-                label="Gateway" 
-                value={asset.gateway || <span className="text-muted-foreground/50 italic">Not specified</span>} 
-                tooltip="Default gateway"
-                editable
-              />
-            </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
+            </>
           )}
         </div>
 
