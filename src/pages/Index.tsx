@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { TopNavBar } from "@/components/TopNavBar";
+import { StatusBar } from "@/components/StatusBar";
+import { RightToolbar } from "@/components/RightToolbar";
 import { AssetDetailPanel } from "@/components/AssetDetailPanel";
 import { AssetDashboardPanel } from "@/components/AssetDashboardPanel";
 import { AssetInventoryPanel } from "@/components/AssetInventoryPanel";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { deviceRoles, roleToAssetMapping } from "@/data/asset-dashboard";
 import { unifiedAssets } from "@/data/unified-assets";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { 
   mockFlows, 
@@ -128,100 +129,112 @@ const Index = () => {
       {/* Top Navigation */}
       <TopNavBar />
 
-      {/* Main Tabs with breadcrumb for asset detail */}
-      <div className="border-b border-border bg-card px-6">
-        <div className="flex items-center h-10">
-          <Tabs
-            value={activeMainTab}
-            onValueChange={(v) => {
-              const nextTab = v as "dashboard" | "inventory";
-              setActiveMainTab(nextTab);
-              if (nextTab === "inventory") {
-                setInventoryView("list");
-              }
-            }}
-          >
-            <TabsList className="h-10 bg-transparent border-0 p-0">
-              <TabsTrigger 
-                value="dashboard"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4"
+      {/* Main body: content + right toolbar */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Content area */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Sub-tabs with breadcrumb */}
+          <div className="border-b border-border bg-card px-6">
+            <div className="flex items-center h-10">
+              <Tabs
+                value={activeMainTab}
+                onValueChange={(v) => {
+                  const nextTab = v as "dashboard" | "inventory";
+                  setActiveMainTab(nextTab);
+                  if (nextTab === "inventory") {
+                    setInventoryView("list");
+                  }
+                }}
               >
-                Asset Dashboard
-              </TabsTrigger>
-              <TabsTrigger 
-                value="inventory"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4"
-              >
-                Asset Inventory
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          {/* Breadcrumb for asset detail view */}
-          {isViewingAssetDetail && selectedAsset && (
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border text-sm">
-              <button
-                onClick={() => setInventoryView("list")}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                All Assets
-              </button>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <span className="text-foreground font-medium">{selectedAsset.name}</span>
+                <TabsList className="h-10 bg-transparent border-0 p-0">
+                  <TabsTrigger 
+                    value="dashboard"
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none px-4"
+                  >
+                    Asset Dashboard
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="inventory"
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none px-4"
+                  >
+                    Asset Inventory
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              {/* Breadcrumb for asset detail view */}
+              {isViewingAssetDetail && selectedAsset && (
+                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border text-sm">
+                  <button
+                    onClick={() => setInventoryView("list")}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    All Assets
+                  </button>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-foreground font-medium">{selectedAsset.name}</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 overflow-hidden min-h-0">
+            {activeMainTab === "dashboard" ? (
+              <AssetDashboardPanel
+                assets={unifiedAssets}
+                filteredAssets={filteredAssets}
+                activeRoleFilter={activeRoleFilter}
+                activeProtocolFilter={activeProtocolFilter}
+                onRoleFilterChange={handleRoleFilterChange}
+                onProtocolFilterChange={handleProtocolFilterChange}
+                onViewFilterChange={handleViewFilterChange}
+                onSelectAsset={handleSelectAsset}
+              />
+            ) : inventoryView === "list" ? (
+              <AssetInventoryPanel
+                assets={unifiedAssets}
+                filteredAssets={filteredAssets}
+                activeFilterLabel={activeFilterLabel}
+                hasActiveFilter={hasActiveFilter}
+                selectedAssetId={selectedAssetId}
+                activeViewId={activeViewFilter}
+                onViewChange={setActiveViewFilter}
+                onClearFilters={handleClearFilters}
+                onSelectAsset={handleSelectAsset}
+              />
+            ) : selectedAsset ? (
+              <AssetDetailPanel
+                asset={selectedAsset}
+                events={mockThreatEvents}
+                peers={mockPeers}
+                mitreCategories={mockMitreCategories}
+                flows={mockFlows}
+                protocols={mockProtocolBreakdown}
+                anomalies={mockAnomalies}
+                applications={mockApplications}
+                conversations={mockConversations}
+                qosData={mockQoSData}
+                timelineEvents={mockTimelineEvents}
+                changeHistory={mockChangeHistory}
+                networkBehavior={mockNetworkBehavior}
+                dnsData={mockDNSData}
+                dhcpData={mockDHCPData}
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                No assets match the current filters.
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Right icon toolbar */}
+        <RightToolbar />
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        {activeMainTab === "dashboard" ? (
-          <AssetDashboardPanel
-            assets={unifiedAssets}
-            filteredAssets={filteredAssets}
-            activeRoleFilter={activeRoleFilter}
-            activeProtocolFilter={activeProtocolFilter}
-            onRoleFilterChange={handleRoleFilterChange}
-            onProtocolFilterChange={handleProtocolFilterChange}
-            onViewFilterChange={handleViewFilterChange}
-            onSelectAsset={handleSelectAsset}
-          />
-        ) : inventoryView === "list" ? (
-          <AssetInventoryPanel
-            assets={unifiedAssets}
-            filteredAssets={filteredAssets}
-            activeFilterLabel={activeFilterLabel}
-            hasActiveFilter={hasActiveFilter}
-            selectedAssetId={selectedAssetId}
-            activeViewId={activeViewFilter}
-            onViewChange={setActiveViewFilter}
-            onClearFilters={handleClearFilters}
-            onSelectAsset={handleSelectAsset}
-          />
-        ) : selectedAsset ? (
-          <AssetDetailPanel
-            asset={selectedAsset}
-            events={mockThreatEvents}
-            peers={mockPeers}
-            mitreCategories={mockMitreCategories}
-            flows={mockFlows}
-            protocols={mockProtocolBreakdown}
-            anomalies={mockAnomalies}
-            applications={mockApplications}
-            conversations={mockConversations}
-            qosData={mockQoSData}
-            timelineEvents={mockTimelineEvents}
-            changeHistory={mockChangeHistory}
-            networkBehavior={mockNetworkBehavior}
-            dnsData={mockDNSData}
-            dhcpData={mockDHCPData}
-          />
-        ) : (
-          <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-            No assets match the current filters.
-          </div>
-        )}
-      </div>
+      {/* Bottom Status Bar */}
+      <StatusBar />
     </div>
   );
 };
