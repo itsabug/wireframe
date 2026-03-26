@@ -108,6 +108,10 @@ export default {
           stale: "hsl(var(--status-stale))",
           offline: "hsl(var(--status-offline))",
         },
+        "status-bar": {
+          DEFAULT: "hsl(var(--status-bar))",
+          foreground: "hsl(var(--status-bar-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
