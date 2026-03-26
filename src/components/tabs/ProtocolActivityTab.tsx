@@ -492,7 +492,7 @@ export const ProtocolActivityTab = ({ dnsData, dhcpData }: ProtocolActivityTabPr
           <CardHeader className="py-3 px-4">
             <CardTitle className="text-sm flex items-center gap-2">
               <Network className="h-4 w-4 text-primary" />
-              Protocol Activity
+              L7 Protocols
             </CardTitle>
           </CardHeader>
           <div className="px-2 pb-2 space-y-0.5">
