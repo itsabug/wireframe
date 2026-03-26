@@ -1,32 +1,32 @@
 import { NavLink } from "@/components/NavLink";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Calendar } from "lucide-react";
+import { Calendar, Search } from "lucide-react";
 
 const navItems = [
   { label: "Overview" },
-  { label: "Investigate" },
+  { label: "Detections" },
   { label: "Assets", to: "/assets" },
-  { label: "Events" },
+  { label: "Investigate" },
   { label: "Reports" },
   { label: "Settings", to: "/settings" },
 ];
 
 export const TopNavBar = () => {
   return (
-    <header className="h-12 bg-background border-b border-border flex items-center justify-between px-4">
+    <header className="h-11 bg-card border-b border-border flex items-center justify-between px-5">
       {/* Left - Navigation */}
-      <nav className="flex items-center gap-1">
+      <nav className="flex items-center gap-0.5">
         {navItems.map((item) =>
           item.to ? (
             <NavLink
               key={item.label}
               to={item.to}
               className={cn(
-                "px-4 py-2 text-sm font-medium transition-colors rounded-md",
-                "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                "px-3.5 py-1.5 text-sm font-medium transition-colors",
+                "text-muted-foreground hover:text-foreground",
               )}
-              activeClassName="bg-primary/10 text-primary"
+              activeClassName="text-primary font-semibold"
             >
               {item.label}
             </NavLink>
@@ -34,8 +34,8 @@ export const TopNavBar = () => {
             <span
               key={item.label}
               className={cn(
-                "px-4 py-2 text-sm font-medium transition-colors rounded-md",
-                "text-muted-foreground/70",
+                "px-3.5 py-1.5 text-sm font-medium transition-colors cursor-default",
+                "text-muted-foreground hover:text-foreground",
               )}
             >
               {item.label}
@@ -44,15 +44,11 @@ export const TopNavBar = () => {
         )}
       </nav>
 
-      {/* Right - Time Range */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Live</span>
-        </div>
-        <Select defaultValue="10d">
-          <SelectTrigger className="w-44 h-8 text-xs font-medium bg-secondary/30 border-border/50">
-            <Calendar className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+      {/* Right - Time Range + Search */}
+      <div className="flex items-center gap-2">
+        <Select defaultValue="24h">
+          <SelectTrigger className="w-40 h-8 text-xs font-medium bg-card border-border">
+            <Calendar className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -66,6 +62,9 @@ export const TopNavBar = () => {
             <SelectItem value="custom" className="text-primary font-medium">Custom Range...</SelectItem>
           </SelectContent>
         </Select>
+        <button className="p-1.5 text-muted-foreground hover:text-foreground transition-colors">
+          <Search className="h-4 w-4" />
+        </button>
       </div>
     </header>
   );
